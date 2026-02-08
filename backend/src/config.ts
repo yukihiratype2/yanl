@@ -20,6 +20,10 @@ export interface Config {
       tv: string;
       movie: string;
     };
+    path_map: Array<{
+      from: string;
+      to: string;
+    }>;
   };
   tmdb: {
     token: string;
@@ -67,6 +71,7 @@ const DEFAULT_CONFIG: Config = {
       tv: "",
       movie: "",
     },
+    path_map: [],
   },
   tmdb: {
     token: "",
@@ -113,6 +118,9 @@ export function loadConfig(): Config {
           ...DEFAULT_CONFIG.qbittorrent.download_dirs,
           ...parsed.qbittorrent?.download_dirs,
         },
+        path_map: Array.isArray(parsed.qbittorrent?.path_map)
+          ? parsed.qbittorrent?.path_map || []
+          : DEFAULT_CONFIG.qbittorrent.path_map,
       },
       tmdb: { ...DEFAULT_CONFIG.tmdb, ...parsed.tmdb },
       media_dirs: { ...DEFAULT_CONFIG.media_dirs, ...parsed.media_dirs },
@@ -151,6 +159,7 @@ export function getConfigValue(key: string): string {
     case "qbit_download_dir_anime": return config.qbittorrent.download_dirs.anime;
     case "qbit_download_dir_tv": return config.qbittorrent.download_dirs.tv;
     case "qbit_download_dir_movie": return config.qbittorrent.download_dirs.movie;
+    case "qbit_path_map": return JSON.stringify(config.qbittorrent.path_map || []);
     case "tmdb_token": return config.tmdb.token;
     case "media_dir_anime": return config.media_dirs.anime;
     case "media_dir_tv": return config.media_dirs.tv;
@@ -177,6 +186,21 @@ export function updateConfigValues(updates: Record<string, string>): void {
       case "qbit_download_dir_anime": config.qbittorrent.download_dirs.anime = value; break;
       case "qbit_download_dir_tv": config.qbittorrent.download_dirs.tv = value; break;
       case "qbit_download_dir_movie": config.qbittorrent.download_dirs.movie = value; break;
+      case "qbit_path_map":
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            config.qbittorrent.path_map = parsed
+              .map((entry) => ({
+                from: typeof entry?.from === "string" ? entry.from : "",
+                to: typeof entry?.to === "string" ? entry.to : "",
+              }))
+              .filter((entry) => entry.from && entry.to);
+          }
+        } catch {
+          // Ignore invalid JSON, keep existing map
+        }
+        break;
       case "tmdb_token": config.tmdb.token = value; break;
       case "media_dir_anime": config.media_dirs.anime = value; break;
       case "media_dir_tv": config.media_dirs.tv = value; break;

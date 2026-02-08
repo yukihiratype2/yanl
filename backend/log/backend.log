@@ -1,0 +1,38 @@
+{"level":30,"time":"2026-02-08T14:42:35.557Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T14:42:35.558Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T14:42:35.569Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T14:42:35.569Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T14:42:35.570Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T14:45:00.013Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T14:45:00.015Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T14:45:00.091Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T14:45:00.091Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T14:45:00.101Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T14:45:19.629Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T14:45:19.629Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T14:45:19.641Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T14:45:19.642Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T14:45:19.642Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T15:10:00.016Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T15:10:00.018Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T15:10:00.105Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T15:10:00.105Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T15:10:00.115Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T15:15:00.011Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T15:15:00.011Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T15:15:00.025Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T15:17:30.108Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T15:17:30.108Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T15:17:30.121Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T15:17:30.121Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T15:17:30.121Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T15:19:44.102Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T15:19:44.102Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T15:19:44.115Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T15:19:44.115Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T15:19:44.115Z","pid":46690,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T15:20:00.012Z","pid":46690,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T15:20:00.013Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T15:20:00.100Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T15:20:00.101Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T15:20:00.109Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}

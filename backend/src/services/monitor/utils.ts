@@ -1,8 +1,7 @@
-import * as rss from "../rss";
 import * as qbittorrent from "../qbittorrent";
 import * as fileManager from "../fileManager";
 
-export type ParsedTitle = rss.RSSItem["ai"];
+export type ParsedTitle = import("../rss").RSSItem["ai"];
 export type QbitTorrent = qbittorrent.QBitTorrentInfo;
 
 export function getTodayISO(): string {
@@ -13,19 +12,6 @@ export function parseMagnetHash(link: string): string | null {
   if (!link.startsWith("magnet:?xt=urn:btih:")) return null;
   const hash = link.split("xt=urn:btih:")[1]?.split("&")[0];
   return hash ? hash.toLowerCase() : null;
-}
-
-export function isTitleMatch(subTitle: string, parseResult?: ParsedTitle | null): boolean {
-  if (!parseResult) return false;
-  const subTitleLower = subTitle.toLowerCase();
-  const english = parseResult.englishTitle?.toLowerCase() || "";
-  const chinese = parseResult.chineseTitle?.toLowerCase() || "";
-  return (
-    english.includes(subTitleLower) ||
-    chinese.includes(subTitleLower) ||
-    subTitleLower.includes(english) ||
-    subTitleLower.includes(chinese)
-  );
 }
 
 export function selectPrimaryVideoFile(contentPath: string): string {

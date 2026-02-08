@@ -16,6 +16,7 @@ import {
 import { getTVDetail, getMovieDetail, getSeasonDetail } from "../services/tmdb";
 import { getAllEpisodes, getSubjectDetail } from "../services/bgm";
 import { createMediaFolder, deleteMediaFolder } from "../services/fileManager";
+import { deleteTorrents } from "../services/qbittorrent";
 
 const subscriptionRoutes = new Hono();
 
@@ -246,6 +247,33 @@ subscriptionRoutes.delete("/:id", async (c) => {
     body?.delete_files_on_disk ?? body?.delete_files
   );
   const deleteFilesOnDisk = deleteFilesQuery || deleteFilesBody;
+
+  const torrents = getTorrentsBySubscription(id);
+  const episodes = getEpisodesBySubscription(id);
+  const hashSet = new Set<string>();
+  for (const torrent of torrents) {
+    if (torrent.hash) hashSet.add(torrent.hash.toLowerCase());
+  }
+  for (const episode of episodes) {
+    if (episode.torrent_hash) hashSet.add(episode.torrent_hash.toLowerCase());
+  }
+
+  if (hashSet.size > 0) {
+    try {
+      const success = await deleteTorrents(
+        Array.from(hashSet),
+        deleteFilesOnDisk
+      );
+      if (!success) {
+        return c.json(
+          { error: "Failed to delete torrents in qBittorrent" },
+          502
+        );
+      }
+    } catch (error: any) {
+      return c.json({ error: error.message }, 500);
+    }
+  }
 
   if (deleteFilesOnDisk && sub.folder_path) {
     deleteMediaFolder(sub.media_type, sub.folder_path);

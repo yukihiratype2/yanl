@@ -22,6 +22,7 @@ export function getAllSettings(): Record<string, string> {
     qbit_download_dir_anime: config.qbittorrent.download_dirs.anime,
     qbit_download_dir_tv: config.qbittorrent.download_dirs.tv,
     qbit_download_dir_movie: config.qbittorrent.download_dirs.movie,
+    qbit_path_map: JSON.stringify(config.qbittorrent.path_map || []),
     tmdb_token: config.tmdb.token,
     media_dir_anime: config.media_dirs.anime,
     media_dir_tv: config.media_dirs.tv,

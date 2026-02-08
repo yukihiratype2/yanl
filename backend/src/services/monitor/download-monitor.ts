@@ -9,6 +9,7 @@ import {
 } from "../../db/models";
 import * as fileManager from "../fileManager";
 import { logger } from "../logger";
+import { mapQbitPathToLocal } from "../qbittorrent";
 import {
   buildEpisodeFilename,
   buildMovieFilename,
@@ -79,7 +80,8 @@ async function handleDownloadingEpisode(
 
   logger.info({ subscription: sub.title, episode: ep.title }, "Episode download complete");
 
-  let sourceFile = selectPrimaryVideoFile(torrent.content_path);
+  const contentPath = mapQbitPathToLocal(torrent.content_path);
+  let sourceFile = selectPrimaryVideoFile(contentPath);
 
   try {
     const seasonNum = sub.season_number || 1;
@@ -156,7 +158,8 @@ async function handleDownloadingMovie(
 
   logger.info({ subscription: sub.title }, "Movie download complete");
 
-  let sourceFile = selectPrimaryVideoFile(torrent.content_path);
+  const contentPath = mapQbitPathToLocal(torrent.content_path);
+  let sourceFile = selectPrimaryVideoFile(contentPath);
 
   try {
     const destDir = fileManager.createMediaFolder("movie", sub.title);

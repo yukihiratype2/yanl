@@ -4,13 +4,16 @@ import {
   updateEpisode,
   updateSubscription,
   createTorrent,
+  getProfileById,
+  Profile,
   Subscription,
   Episode,
 } from "../../db/models";
 import * as rss from "../rss";
 import * as qbittorrent from "../qbittorrent";
 import { logger } from "../logger";
-import { getTodayISO, isTitleMatch, parseMagnetHash } from "./utils";
+import { getTodayISO, parseMagnetHash } from "./utils";
+import { isTitleMatch, matchesEpisodeSeason, matchesProfile } from "./matchers";
 
 export async function searchAndDownload() {
   const subscriptions = getActiveSubscriptions();
@@ -41,12 +44,18 @@ async function searchEpisodesForSubscription(sub: Subscription, today: string) {
   const pendingEps = getPendingEpisodes(episodes, today);
   if (pendingEps.length === 0) return;
 
+  const profile = getProfileForSubscription(sub);
+
   for (const ep of pendingEps) {
-    await tryDownloadEpisode(sub, ep);
+    await tryDownloadEpisode(sub, ep, profile);
   }
 }
 
-async function tryDownloadEpisode(sub: Subscription, ep: Episode): Promise<boolean> {
+async function tryDownloadEpisode(
+  sub: Subscription,
+  ep: Episode,
+  profile: Profile | null
+): Promise<boolean> {
   const searchResults = await rss.searchTorrents(sub.title, {
     season: sub.season_number,
     episode: ep.episode_number,
@@ -55,12 +64,31 @@ async function tryDownloadEpisode(sub: Subscription, ep: Episode): Promise<boole
   for (const item of searchResults) {
     const parseResult = item.ai;
     if (!isTitleMatch(sub.title, parseResult)) continue;
-
-    if (
-      sub.season_number &&
-      parseResult?.seasonNumber &&
-      parseResult.seasonNumber !== sub.season_number
-    ) {
+    const episodeSeasonMatch = matchesEpisodeSeason(sub, ep, parseResult);
+    if (!episodeSeasonMatch.ok) {
+      logger.debug(
+        {
+          subscription: sub.title,
+          episode: ep.episode_number,
+          result: item.title,
+          reason: episodeSeasonMatch.reason,
+        },
+        "Episode/season filter rejected episode candidate"
+      );
+      continue;
+    }
+    const profileMatch = matchesProfile(item, profile);
+    if (!profileMatch.ok) {
+      logger.debug(
+        {
+          subscription: sub.title,
+          episode: ep.episode_number,
+          result: item.title,
+          profile: profile?.name ?? null,
+          reason: profileMatch.reason,
+        },
+        "Profile filter rejected episode candidate"
+      );
       continue;
     }
 
@@ -113,8 +141,22 @@ async function startEpisodeDownload(sub: Subscription, ep: Episode, item: rss.RS
 
 async function searchMovieForSubscription(sub: Subscription) {
   const searchResults = await rss.searchTorrents(sub.title);
+  const profile = getProfileForSubscription(sub);
   for (const item of searchResults) {
     if (!isTitleMatch(sub.title, item.ai)) continue;
+    const profileMatch = matchesProfile(item, profile);
+    if (!profileMatch.ok) {
+      logger.debug(
+        {
+          subscription: sub.title,
+          result: item.title,
+          profile: profile?.name ?? null,
+          reason: profileMatch.reason,
+        },
+        "Profile filter rejected movie candidate"
+      );
+      continue;
+    }
 
     logger.info({ subscription: sub.title, title: item.title }, "Found movie match");
     try {
@@ -147,4 +189,9 @@ async function startMovieDownload(sub: Subscription, item: rss.RSSItem) {
     status: "downloading",
     download_path: null,
   });
+}
+
+function getProfileForSubscription(sub: Subscription): Profile | null {
+  if (sub.profile_id == null) return null;
+  return getProfileById(sub.profile_id) ?? null;
 }

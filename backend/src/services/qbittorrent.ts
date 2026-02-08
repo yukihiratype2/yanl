@@ -1,7 +1,69 @@
+import { normalize } from "path";
 import { getSetting } from "../db/settings";
 import { logger } from "./logger";
 
 let sid: string | null = null;
+
+export interface QbitPathMapEntry {
+  from: string;
+  to: string;
+}
+
+function normalizePathForMatch(value: string): string {
+  return value.replace(/\\/g, "/");
+}
+
+function stripTrailingSlashes(value: string): string {
+  const trimmed = value.replace(/\/+$/, "");
+  if (trimmed.length === 0) return "/";
+  if (/^[A-Za-z]:$/.test(trimmed)) return `${trimmed}/`;
+  return trimmed;
+}
+
+export function getQbitPathMap(): QbitPathMapEntry[] {
+  const raw = (getSetting("qbit_path_map") || "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((entry) => ({
+        from: typeof entry?.from === "string" ? entry.from : "",
+        to: typeof entry?.to === "string" ? entry.to : "",
+      }))
+      .filter((entry) => entry.from && entry.to);
+  } catch {
+    return [];
+  }
+}
+
+export function mapQbitPathToLocal(path: string): string {
+  if (!path) return path;
+
+  const mapEntries = getQbitPathMap();
+  if (mapEntries.length === 0) return path;
+
+  const normalizedPath = normalizePathForMatch(path);
+  const sorted = [...mapEntries].sort((a, b) => {
+    const aLen = stripTrailingSlashes(normalizePathForMatch(a.from)).length;
+    const bLen = stripTrailingSlashes(normalizePathForMatch(b.from)).length;
+    return bLen - aLen;
+  });
+
+  for (const entry of sorted) {
+    const from = stripTrailingSlashes(normalizePathForMatch(entry.from));
+    const to = stripTrailingSlashes(normalizePathForMatch(entry.to));
+    if (!from || !to) continue;
+
+    if (normalizedPath === from || normalizedPath.startsWith(`${from}/`)) {
+      const suffix = normalizedPath.slice(from.length);
+      const mapped = `${to}${suffix}`;
+      return normalize(mapped);
+    }
+  }
+
+  return path;
+}
 
 async function getBaseUrl(): Promise<string> {
   const url = getSetting("qbit_url");
