@@ -1,5 +1,13 @@
-import { mkdirSync, renameSync, copyFileSync, existsSync, readdirSync, statSync } from "fs";
-import { join, basename, extname } from "path";
+import {
+  mkdirSync,
+  renameSync,
+  copyFileSync,
+  existsSync,
+  readdirSync,
+  statSync,
+  rmSync,
+} from "fs";
+import { join, basename, extname, resolve, sep } from "path";
 import { getSetting } from "../db/settings";
 
 const VIDEO_EXTENSIONS = new Set([
@@ -86,6 +94,23 @@ export function findVideoFiles(dirPath: string): string[] {
   }
 
   return results;
+}
+
+export function deleteMediaFolder(
+  mediaType: "anime" | "tv" | "movie",
+  folderPath: string
+): void {
+  if (!folderPath) return;
+
+  const baseDir = resolve(getMediaDir(mediaType));
+  const targetDir = resolve(folderPath);
+
+  if (targetDir === baseDir || !targetDir.startsWith(`${baseDir}${sep}`)) {
+    throw new Error(`Refusing to delete path outside media dir: ${targetDir}`);
+  }
+
+  if (!existsSync(targetDir)) return;
+  rmSync(targetDir, { recursive: true, force: true });
 }
 
 function sanitizeFolderName(name: string): string {

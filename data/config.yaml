@@ -1,9 +1,9 @@
 core:
   api_token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz
 qbittorrent:
-  url: http://localhost:8080
+  url: http://192.168.2.33:8090
   username: admin
-  password: ""
+  password: changeme
 tmdb:
   token: eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0ZWJlYTY2OTk0NmEyMTljNjIyYjE4NmFjNGY4NjY1ZCIsIm5iZiI6MTY3NjE5MjU0Ny40MDMsInN1YiI6IjYzZThhYjIzYTJlNjAyMDBiNWVlMzgzYSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.sIec549eRZq590WuIW_Cc0z1Au2GWFPS_PT1_mjWa7g
 media_dirs:
@@ -11,6 +11,6 @@ media_dirs:
   tv: /Users/natsuki/Work/nas-tools/test/tv
   movie: /Users/natsuki/Work/nas-tools/test/movie
 ai:
-  api_url: ""
-  api_token: ""
-  model: ""
+  api_url: https://api.z.ai/api/paas/v4/
+  api_token: f0ee9059d0ef408db0fdbb252cc0e249.mQhqZzW9gEcsa6oe
+  model: glm-4.7

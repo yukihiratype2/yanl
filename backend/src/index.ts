@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
+import { logger as honoLogger } from "hono/logger";
 import { initDatabase } from "./db";
 import { authMiddleware } from "./middleware/auth";
 import settingsRoutes from "./routes/settings";
@@ -12,6 +12,7 @@ import monitorRoutes from "./routes/monitor";
 import profileRoutes from "./routes/profiles";
 import { getSetting } from "./db/settings";
 import { startMonitor } from "./services/monitor";
+import { logger } from "./services/logger";
 
 // Initialize database
 initDatabase();
@@ -23,7 +24,12 @@ const app = new Hono();
 
 // Global middleware
 app.use("*", cors());
-app.use("*", logger());
+app.use(
+  "*",
+  honoLogger((message, ...rest) => {
+    logger.info({ rest }, message);
+  })
+);
 
 // Health check (no auth)
 app.get("/health", (c) => c.json({ status: "ok" }));
@@ -42,8 +48,8 @@ app.route("/api/profiles", profileRoutes);
 
 const port = parseInt(process.env.PORT || "3001");
 
-console.log(`NAS Tools Backend running on http://localhost:${port}`);
-console.log(`API Token: ${getSetting("api_token")}`);
+logger.info(`NAS Tools Backend running on http://localhost:${port}`);
+logger.info(`API Token: ${getSetting("api_token")}`);
 
 export default {
   port,

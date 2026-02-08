@@ -12,6 +12,7 @@ import {
   updateSubscription,
 } from "../db/models";
 import * as tmdb from "./tmdb";
+import * as bgm from "./bgm";
 import * as rss from "./rss";
 import * as ai from "./ai";
 import * as qbittorrent from "./qbittorrent";
@@ -193,11 +194,18 @@ async function checkNewEpisodes() {
   const subscriptions = getActiveSubscriptions();
 
   for (const sub of subscriptions) {
-    if (sub.media_type === "tv") {
+    if (sub.source === "tvdb" && sub.media_type === "tv") {
       try {
         await processTVSubscription(sub);
       } catch (err) {
         console.error(`Error processing TV sub ${sub.title}:`, err);
+      }
+    }
+    if (sub.source === "bgm" && sub.media_type !== "movie") {
+      try {
+        await processBgmSubscription(sub);
+      } catch (err) {
+        console.error(`Error processing BGM sub ${sub.title}:`, err);
       }
     }
     // Movies are single-item, handled by status check usually,
@@ -213,13 +221,13 @@ async function processTVSubscription(sub: Subscription) {
   
   let seasonData;
   if (sub.season_number) {
-    seasonData = await tmdb.getSeasonDetail(sub.tmdb_id, sub.season_number);
+    seasonData = await tmdb.getSeasonDetail(sub.source_id, sub.season_number);
   } else {
     // Fetch show detail to find latest season
-    const showDetail = await tmdb.getTVDetail(sub.tmdb_id);
+    const showDetail = await tmdb.getTVDetail(sub.source_id);
     const lastSeason = showDetail.seasons[showDetail.seasons.length - 1];
     if (lastSeason) {
-      seasonData = await tmdb.getSeasonDetail(sub.tmdb_id, lastSeason.season_number);
+      seasonData = await tmdb.getSeasonDetail(sub.source_id, lastSeason.season_number);
     }
   }
 
@@ -249,12 +257,40 @@ async function processTVSubscription(sub: Subscription) {
   }
 }
 
+async function processBgmSubscription(sub: Subscription) {
+  const episodes = await bgm.getAllEpisodes(sub.source_id, { type: 0 });
+  const existingEpisodes = getEpisodesBySubscription(sub.id);
+  const existingEpMap = new Set(existingEpisodes.map((e) => e.episode_number));
+
+  const today = new Date().toISOString().split("T")[0];
+
+  for (const ep of episodes) {
+    const numberRaw = ep.ep ?? ep.sort;
+    const episodeNumber = Number(numberRaw);
+    if (!Number.isInteger(episodeNumber) || episodeNumber <= 0) continue;
+    if (existingEpMap.has(episodeNumber)) continue;
+    if (!ep.airdate || ep.airdate > today) continue;
+
+    createEpisode({
+      subscription_id: sub.id,
+      episode_number: episodeNumber,
+      title: ep.name_cn || ep.name || null,
+      air_date: ep.airdate,
+      overview: ep.desc || null,
+      still_path: null,
+      status: "pending",
+      torrent_hash: null,
+      file_path: null,
+    });
+  }
+}
+
 async function searchAndDownload() {
   // 1. Handle Pending Episodes
   const subscriptions = getActiveSubscriptions();
 
   for (const sub of subscriptions) {
-    if (sub.media_type === "tv") {
+    if (sub.media_type === "tv" || sub.media_type === "anime") {
       const episodes = getEpisodesBySubscription(sub.id);
       const pendingEps = episodes.filter((e) => e.status === "pending");
 
@@ -269,19 +305,22 @@ async function searchAndDownload() {
       for (const ep of pendingEps) {
         // Try to match matching results
         for (const item of searchResults) {
-          const parseResult = await ai.parseTorrentTitle(item.title);
+          const parseResult = item.ai;
           if (!parseResult) continue;
 
           // AI Logic matching
-          const nameMatch = parseResult.name.toLowerCase().includes(sub.title.toLowerCase()) || sub.title.toLowerCase().includes(parseResult.name.toLowerCase());
+          const nameMatch = 
+            parseResult.englishTitle?.toLowerCase().includes(sub.title.toLowerCase()) || 
+            parseResult.chineseTitle?.toLowerCase().includes(sub.title.toLowerCase()) || 
+            sub.title.toLowerCase().includes(parseResult.englishTitle?.toLowerCase() || "") ||
+            sub.title.toLowerCase().includes(parseResult.chineseTitle?.toLowerCase() || "");
           // Ideally use fuzzy match or TMDB comparison
           
-          if (nameMatch && parseResult.episode === ep.episode_number) {
+          if (nameMatch && parseResult.episodeNumber === ep.episode_number) {
             // Check season if we have it
-             // If sub has season_number, match it. If parseResult.season is 1 (default) and we expect 2, might be mismatch.
-             // But sometimes AI defaults season to 1.
-             // Let's rely on strict match if sub.season_number is set.
-            if (sub.season_number && parseResult.season !== sub.season_number) {
+             // If sub has season_number, match it. 
+             // Let's rely on strict match if both are present.
+            if (sub.season_number && parseResult.seasonNumber && parseResult.seasonNumber !== sub.season_number) {
                continue;
             }
 
@@ -319,7 +358,7 @@ async function searchAndDownload() {
                 title: item.title,
                 link: item.link,
                 hash: hash,
-                size: item.size || null,
+                size: item.ai?.size || item.torrent?.contentLength || null,
                 source: item.source,
                 status: "downloading",
                 download_path: null // unknown yet
@@ -338,10 +377,16 @@ async function searchAndDownload() {
         const query = sub.title;
         const searchResults = await rss.searchTorrents(query);
         for (const item of searchResults) {
-            const parseResult = await ai.parseTorrentTitle(item.title);
+            const parseResult = item.ai;
             if (!parseResult) continue;
             
-            if (parseResult.name.toLowerCase().includes(sub.title.toLowerCase())) {
+            const nameMatch = 
+              parseResult.englishTitle?.toLowerCase().includes(sub.title.toLowerCase()) || 
+              parseResult.chineseTitle?.toLowerCase().includes(sub.title.toLowerCase()) || 
+              sub.title.toLowerCase().includes(parseResult.englishTitle?.toLowerCase() || "") ||
+              sub.title.toLowerCase().includes(parseResult.chineseTitle?.toLowerCase() || "");
+
+            if (nameMatch) {
                  console.log(`Found movie match: ${item.title}`);
                  try {
                      await qbittorrent.addTorrentByUrl(item.link, "nas-tools-movies");
@@ -358,7 +403,7 @@ async function searchAndDownload() {
                         title: item.title,
                         link: item.link,
                         hash: hash,
-                        size: item.size || null,
+                        size: item.ai?.size || item.torrent?.contentLength || null,
                         source: item.source,
                         status: "downloading",
                         download_path: null
@@ -398,7 +443,8 @@ async function monitorDownloads() {
   const subscriptions = getActiveSubscriptions();
   
   for (const sub of subscriptions) {
-      if (sub.media_type === "tv") {
+    if (sub.source !== "tvdb") continue;
+    if (sub.media_type === "tv") {
           const episodes = getEpisodesBySubscription(sub.id).filter(e => e.status === "downloading");
           for (const ep of episodes) {
              if (!ep.torrent_hash) {

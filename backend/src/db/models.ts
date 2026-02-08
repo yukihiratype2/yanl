@@ -2,7 +2,8 @@ import db from "./index";
 
 export interface Subscription {
   id: number;
-  tmdb_id: number;
+  source: "tvdb" | "bgm";
+  source_id: number;
   media_type: "anime" | "tv" | "movie";
   title: string;
   title_original: string | null;
@@ -89,23 +90,24 @@ export function getSubscriptionById(id: number): Subscription | undefined {
     .get(id) as Subscription | undefined;
 }
 
-export function getSubscriptionByTmdbId(
-  tmdbId: number,
+export function getSubscriptionBySourceId(
+  source: string,
+  sourceId: number,
   mediaType: string,
   seasonNumber?: number | null
 ): Subscription | undefined {
   if (seasonNumber != null) {
     return db
       .prepare(
-        "SELECT * FROM subscriptions WHERE tmdb_id = ? AND media_type = ? AND season_number = ?"
+        "SELECT * FROM subscriptions WHERE source = ? AND source_id = ? AND media_type = ? AND season_number = ?"
       )
-      .get(tmdbId, mediaType, seasonNumber) as Subscription | undefined;
+      .get(source, sourceId, mediaType, seasonNumber) as Subscription | undefined;
   }
   return db
     .prepare(
-      "SELECT * FROM subscriptions WHERE tmdb_id = ? AND media_type = ?"
+      "SELECT * FROM subscriptions WHERE source = ? AND source_id = ? AND media_type = ?"
     )
-    .get(tmdbId, mediaType) as Subscription | undefined;
+    .get(source, sourceId, mediaType) as Subscription | undefined;
 }
 
 export function createSubscription(
@@ -113,11 +115,12 @@ export function createSubscription(
 ): Subscription {
   const result = db
     .prepare(
-      `INSERT INTO subscriptions (tmdb_id, media_type, title, title_original, overview, poster_path, backdrop_path, first_air_date, vote_average, season_number, total_episodes, status, folder_path, profile_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO subscriptions (source, source_id, media_type, title, title_original, overview, poster_path, backdrop_path, first_air_date, vote_average, season_number, total_episodes, status, folder_path, profile_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
-      sub.tmdb_id,
+      sub.source,
+      sub.source_id,
       sub.media_type,
       sub.title,
       sub.title_original,

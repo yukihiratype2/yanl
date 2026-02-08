@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getAllSettings, setSettings, getSetting } from "../db/settings";
+import { testAIConfig } from "../services/ai";
 
 const settingsRoutes = new Hono();
 
@@ -31,6 +32,16 @@ settingsRoutes.post("/test-qbit", async (c) => {
   const { testConnection } = await import("../services/qbittorrent");
   const result = await testConnection();
   return c.json(result);
+});
+
+// Test AI configuration
+settingsRoutes.post("/ai/test", async (c) => {
+  try {
+    const result = await testAIConfig();
+    return c.json({ response: result });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
 });
 
 export default settingsRoutes;

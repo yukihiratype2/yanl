@@ -35,7 +35,8 @@ export function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS subscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      tmdb_id INTEGER NOT NULL,
+      source TEXT NOT NULL DEFAULT 'tvdb',
+      source_id INTEGER NOT NULL,
       media_type TEXT NOT NULL CHECK(media_type IN ('anime', 'tv', 'movie')),
       title TEXT NOT NULL,
       title_original TEXT,
@@ -51,7 +52,7 @@ export function initDatabase() {
       profile_id INTEGER,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
-      UNIQUE(tmdb_id, media_type, season_number),
+      UNIQUE(source, source_id, media_type, season_number),
       FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL
     );
 
@@ -105,6 +106,85 @@ export function initDatabase() {
 
   ensureColumn("profiles", "is_default", "is_default INTEGER NOT NULL DEFAULT 0");
   ensureColumn("subscriptions", "profile_id", "profile_id INTEGER");
+
+  const subColumns = columnsFor("subscriptions");
+  const hasLegacyTmdbId = subColumns.includes("tmdb_id");
+  const hasSourceId = subColumns.includes("source_id");
+  if (hasLegacyTmdbId && !hasSourceId) {
+    db.exec("PRAGMA foreign_keys = OFF");
+    db.exec(`
+      CREATE TABLE subscriptions_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source TEXT NOT NULL DEFAULT 'tvdb',
+        source_id INTEGER NOT NULL,
+        media_type TEXT NOT NULL CHECK(media_type IN ('anime', 'tv', 'movie')),
+        title TEXT NOT NULL,
+        title_original TEXT,
+        overview TEXT,
+        poster_path TEXT,
+        backdrop_path TEXT,
+        first_air_date TEXT,
+        vote_average REAL,
+        season_number INTEGER,
+        total_episodes INTEGER,
+        status TEXT DEFAULT 'active',
+        folder_path TEXT,
+        profile_id INTEGER,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        UNIQUE(source, source_id, media_type, season_number),
+        FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL
+      );
+    `);
+    db.exec(`
+      INSERT INTO subscriptions_new (
+        id,
+        source,
+        source_id,
+        media_type,
+        title,
+        title_original,
+        overview,
+        poster_path,
+        backdrop_path,
+        first_air_date,
+        vote_average,
+        season_number,
+        total_episodes,
+        status,
+        folder_path,
+        profile_id,
+        created_at,
+        updated_at
+      )
+      SELECT
+        id,
+        'tvdb',
+        tmdb_id,
+        media_type,
+        title,
+        title_original,
+        overview,
+        poster_path,
+        backdrop_path,
+        first_air_date,
+        vote_average,
+        season_number,
+        total_episodes,
+        status,
+        folder_path,
+        profile_id,
+        created_at,
+        updated_at
+      FROM subscriptions;
+    `);
+    db.exec("DROP TABLE subscriptions");
+    db.exec("ALTER TABLE subscriptions_new RENAME TO subscriptions");
+    db.exec("PRAGMA foreign_keys = ON");
+  } else {
+    ensureColumn("subscriptions", "source", "source TEXT NOT NULL DEFAULT 'tvdb'");
+    ensureColumn("subscriptions", "source_id", "source_id INTEGER");
+  }
 
   console.log("Database initialized successfully");
 }

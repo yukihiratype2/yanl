@@ -3,7 +3,7 @@ import {
   getAllSubscriptions,
   getActiveSubscriptions,
   getSubscriptionById,
-  getSubscriptionByTmdbId,
+  getSubscriptionBySourceId,
   createSubscription,
   updateSubscription,
   deleteSubscription,
@@ -14,7 +14,8 @@ import {
   getProfileById,
 } from "../db/models";
 import { getTVDetail, getMovieDetail, getSeasonDetail } from "../services/tmdb";
-import { createMediaFolder } from "../services/fileManager";
+import { getAllEpisodes, getSubjectDetail } from "../services/bgm";
+import { createMediaFolder, deleteMediaFolder } from "../services/fileManager";
 
 const subscriptionRoutes = new Hono();
 
@@ -40,15 +41,27 @@ subscriptionRoutes.get("/:id", (c) => {
 // Subscribe to a media
 subscriptionRoutes.post("/", async (c) => {
   const body = await c.req.json<{
-    tmdb_id: number;
+    source?: "tvdb" | "bgm";
+    source_id?: number;
+    tmdb_id?: number;
     media_type: "anime" | "tv" | "movie";
     season_number?: number;
     profile_id?: number | null;
   }>();
 
-  const { tmdb_id, media_type, season_number } = body;
+  const source = body.source ?? "tvdb";
+  const rawSourceId = body.source_id ?? body.tmdb_id;
+  const sourceId = rawSourceId != null ? Number(rawSourceId) : null;
+  const { media_type, season_number } = body;
   let profileId: number | null =
     body.profile_id !== undefined ? body.profile_id : null;
+
+  if (!sourceId || Number.isNaN(sourceId)) {
+    return c.json({ error: "Missing source_id" }, 400);
+  }
+  if (source !== "tvdb" && source !== "bgm") {
+    return c.json({ error: "Invalid source" }, 400);
+  }
 
   if (profileId != null) {
     const profile = getProfileById(profileId);
@@ -61,7 +74,12 @@ subscriptionRoutes.post("/", async (c) => {
   }
 
   // Check if already subscribed
-  const existing = getSubscriptionByTmdbId(tmdb_id, media_type, season_number);
+  const existing = getSubscriptionBySourceId(
+    source,
+    sourceId,
+    media_type,
+    season_number
+  );
   if (existing) {
     return c.json({ error: "Already subscribed", subscription: existing }, 409);
   }
@@ -77,8 +95,18 @@ subscriptionRoutes.post("/", async (c) => {
     let totalEpisodes: number | null = null;
     let seasonNum: number | null = season_number ?? null;
 
-    if (media_type === "movie") {
-      const detail = await getMovieDetail(tmdb_id);
+    if (source === "bgm") {
+      const detail = await getSubjectDetail(sourceId);
+      title = detail.name_cn || detail.name;
+      titleOriginal = detail.name || detail.name_cn || null;
+      overview = detail.summary || null;
+      posterPath = detail.images?.medium ?? detail.images?.small ?? null;
+      backdropPath = detail.images?.large ?? null;
+      firstAirDate = detail.date ?? null;
+      voteAverage = detail.rating?.score ?? null;
+      totalEpisodes = detail.total_episodes ?? detail.eps ?? null;
+    } else if (media_type === "movie") {
+      const detail = await getMovieDetail(sourceId);
       title = detail.title;
       titleOriginal = detail.original_title;
       overview = detail.overview;
@@ -87,7 +115,7 @@ subscriptionRoutes.post("/", async (c) => {
       firstAirDate = detail.release_date;
       voteAverage = detail.vote_average;
     } else {
-      const detail = await getTVDetail(tmdb_id);
+      const detail = await getTVDetail(sourceId);
       title = detail.name;
       titleOriginal = detail.original_name;
       overview = detail.overview;
@@ -108,7 +136,8 @@ subscriptionRoutes.post("/", async (c) => {
     const folderPath = createMediaFolder(media_type, title, seasonNum);
 
     const sub = createSubscription({
-      tmdb_id,
+      source,
+      source_id: sourceId,
       media_type,
       title,
       title_original: titleOriginal,
@@ -125,24 +154,52 @@ subscriptionRoutes.post("/", async (c) => {
     });
 
     // Fetch and create episodes for TV/anime
-    if (media_type !== "movie" && seasonNum != null) {
-      try {
-        const seasonDetail = await getSeasonDetail(tmdb_id, seasonNum);
-        for (const ep of seasonDetail.episodes) {
-          createEpisode({
-            subscription_id: sub.id,
-            episode_number: ep.episode_number,
-            title: ep.name,
-            air_date: ep.air_date,
-            overview: ep.overview,
-            still_path: ep.still_path,
-            status: "pending",
-            torrent_hash: null,
-            file_path: null,
-          });
+    if (media_type !== "movie") {
+      if (source === "tvdb" && seasonNum != null) {
+        try {
+          const seasonDetail = await getSeasonDetail(sourceId, seasonNum);
+          for (const ep of seasonDetail.episodes) {
+            createEpisode({
+              subscription_id: sub.id,
+              episode_number: ep.episode_number,
+              title: ep.name,
+              air_date: ep.air_date,
+              overview: ep.overview,
+              still_path: ep.still_path,
+              status: "pending",
+              torrent_hash: null,
+              file_path: null,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch episodes:", err);
         }
-      } catch (err) {
-        console.error("Failed to fetch episodes:", err);
+      }
+
+      if (source === "bgm") {
+        try {
+          const episodes = await getAllEpisodes(sourceId, { type: 0 });
+          for (const ep of episodes) {
+            const numberRaw = ep.ep ?? ep.sort;
+            const episodeNumber = Number(numberRaw);
+            if (!Number.isInteger(episodeNumber) || episodeNumber <= 0) continue;
+            const titleText = ep.name_cn || ep.name || null;
+            const airDate = ep.airdate && ep.airdate.trim().length > 0 ? ep.airdate : null;
+            createEpisode({
+              subscription_id: sub.id,
+              episode_number: episodeNumber,
+              title: titleText,
+              air_date: airDate,
+              overview: ep.desc || null,
+              still_path: null,
+              status: "pending",
+              torrent_hash: null,
+              file_path: null,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch BGM episodes:", err);
+        }
       }
     }
 
@@ -164,11 +221,33 @@ subscriptionRoutes.patch("/:id", async (c) => {
 });
 
 // Delete subscription
-subscriptionRoutes.delete("/:id", (c) => {
+subscriptionRoutes.delete("/:id", async (c) => {
   const id = parseInt(c.req.param("id"));
   const sub = getSubscriptionById(id);
   if (!sub) return c.json({ error: "Subscription not found" }, 404);
 
+  const parseBool = (value: string | undefined | null) => {
+    if (!value) return false;
+    return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+  };
+
+  const deleteFilesQuery = parseBool(
+    c.req.query("delete_files_on_disk") ?? c.req.query("delete_files")
+  );
+  const body = await c.req
+    .json<{
+      delete_files_on_disk?: boolean;
+      delete_files?: boolean;
+    }>()
+    .catch(() => null);
+  const deleteFilesBody = Boolean(
+    body?.delete_files_on_disk ?? body?.delete_files
+  );
+  const deleteFilesOnDisk = deleteFilesQuery || deleteFilesBody;
+
+  if (deleteFilesOnDisk && sub.folder_path) {
+    deleteMediaFolder(sub.media_type, sub.folder_path);
+  }
   deleteSubscription(id);
   return c.json({ success: true });
 });
