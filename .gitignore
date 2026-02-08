@@ -4,3 +4,4 @@ dist/
 backend/data/
 .env.local
 *.db
+backend/log/

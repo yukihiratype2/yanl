@@ -104,3 +104,8 @@
 {"level":30,"time":"2026-02-08T16:15:00.089Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
 {"level":30,"time":"2026-02-08T16:15:00.090Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
 {"level":30,"time":"2026-02-08T16:15:00.101Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T16:15:40.134Z","pid":26409,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T16:15:40.134Z","pid":26409,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T16:15:40.146Z","pid":26409,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:15:40.146Z","pid":26409,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T16:15:40.146Z","pid":26409,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
