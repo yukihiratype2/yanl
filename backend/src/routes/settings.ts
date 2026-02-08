@@ -1,0 +1,36 @@
+import { Hono } from "hono";
+import { getAllSettings, setSettings, getSetting } from "../db/settings";
+
+const settingsRoutes = new Hono();
+
+// Get all settings
+settingsRoutes.get("/", (c) => {
+  const settings = getAllSettings();
+  // Don't expose api_token in the listing
+  const { api_token, ...rest } = settings;
+  return c.json(rest);
+});
+
+// Update settings
+settingsRoutes.put("/", async (c) => {
+  const body = await c.req.json<Record<string, string>>();
+  // Prevent changing api_token through this endpoint
+  delete body.api_token;
+  setSettings(body);
+  return c.json({ success: true });
+});
+
+// Get API token (separate endpoint for security)
+settingsRoutes.get("/token", (c) => {
+  const token = getSetting("api_token");
+  return c.json({ token });
+});
+
+// Test qBittorrent connection
+settingsRoutes.post("/test-qbit", async (c) => {
+  const { testConnection } = await import("../services/qbittorrent");
+  const result = await testConnection();
+  return c.json(result);
+});
+
+export default settingsRoutes;

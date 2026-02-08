@@ -1,0 +1,20 @@
+{
+  "name": "nas-tools-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.4.0",
+    "hono": "^4.4.0",
+    "node-cron": "^4.2.1",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.5.0"
+  }
+}

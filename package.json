@@ -1,0 +1,11 @@
+{
+  "name": "nas-tools",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:backend": "bun run --filter nas-tools-backend dev",
+    "dev:frontend": "bun run --filter frontend dev"
+  },
+  "workspaces": ["backend", "frontend"]
+}
