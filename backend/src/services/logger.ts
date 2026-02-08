@@ -1,22 +1,63 @@
 import pino from "pino";
 import { mkdirSync } from "fs";
-import { join } from "path";
+import { isAbsolute, join } from "path";
+import { loadConfig } from "../config";
 
-const LOG_DIR = join(process.cwd(), "log");
-mkdirSync(LOG_DIR, { recursive: true });
+let currentDestination: any | null = null;
 
-const LOG_FILE = join(LOG_DIR, "backend.log");
+function resolveLogDir(dir: string): string {
+  if (!dir) return join(process.cwd(), "log");
+  return isAbsolute(dir) ? dir : join(process.cwd(), dir);
+}
 
-const destination = pino.destination({
-  dest: LOG_FILE,
-  sync: false,
-});
+function buildDestination(): any {
+  const config = loadConfig();
+  const dir = resolveLogDir(process.env.LOG_DIR || config.log?.dir || join(process.cwd(), "log"));
 
-export const logger = pino(
-  {
-    level: process.env.LOG_LEVEL || "info",
-    timestamp: pino.stdTimeFunctions.isoTime,
-  },
-  destination
-);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "backend.log");
 
+  return pino.destination({
+    dest: file,
+    sync: false,
+  });
+}
+
+function buildLogger(): pino.Logger {
+  const config = loadConfig();
+  const level = process.env.LOG_LEVEL || config.log?.level || "warn";
+
+  let destination: any;
+  try {
+    destination = buildDestination();
+  } catch (err) {
+    // If the file destination can't be opened, fall back to stdout to avoid losing logs.
+    console.error("Failed to initialize log file destination:", err);
+    destination = pino.destination(1);
+  }
+
+  currentDestination = destination;
+
+  return pino(
+    {
+      level,
+      timestamp: pino.stdTimeFunctions.isoTime,
+    },
+    destination
+  );
+}
+
+export let logger = buildLogger();
+
+export function reconfigureLogger(): pino.Logger {
+  try {
+    currentDestination?.flush?.();
+    currentDestination?.end?.();
+    currentDestination?.destroy?.();
+  } catch {
+    // Best-effort: old destination might already be closed.
+  }
+
+  logger = buildLogger();
+  return logger;
+}

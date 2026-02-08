@@ -6,10 +6,20 @@ export interface Config {
   core: {
     api_token: string;
   };
+  log: {
+    dir: string;
+    level: string;
+  };
   qbittorrent: {
     url: string;
     username: string;
     password?: string;
+    tag: string;
+    download_dirs: {
+      anime: string;
+      tv: string;
+      movie: string;
+    };
   };
   tmdb: {
     token: string;
@@ -42,10 +52,21 @@ const DEFAULT_CONFIG: Config = {
   core: {
     api_token: "", // Will be generated if empty or missing
   },
+  log: {
+    // Defaults to `${process.cwd()}/log`.
+    dir: join(process.cwd(), "log"),
+    level: "warn",
+  },
   qbittorrent: {
     url: "http://localhost:8080",
     username: "admin",
     password: "",
+    tag: "nas-tools",
+    download_dirs: {
+      anime: "",
+      tv: "",
+      movie: "",
+    },
   },
   tmdb: {
     token: "",
@@ -84,7 +105,15 @@ export function loadConfig(): Config {
     // Merge with defaults to ensure all keys exist
     currentConfig = {
       core: { ...DEFAULT_CONFIG.core, ...parsed.core },
-      qbittorrent: { ...DEFAULT_CONFIG.qbittorrent, ...parsed.qbittorrent },
+      log: { ...DEFAULT_CONFIG.log, ...parsed.log },
+      qbittorrent: {
+        ...DEFAULT_CONFIG.qbittorrent,
+        ...parsed.qbittorrent,
+        download_dirs: {
+          ...DEFAULT_CONFIG.qbittorrent.download_dirs,
+          ...parsed.qbittorrent?.download_dirs,
+        },
+      },
       tmdb: { ...DEFAULT_CONFIG.tmdb, ...parsed.tmdb },
       media_dirs: { ...DEFAULT_CONFIG.media_dirs, ...parsed.media_dirs },
       ai: { ...DEFAULT_CONFIG.ai, ...parsed.ai },
@@ -113,9 +142,15 @@ export function getConfigValue(key: string): string {
   const config = loadConfig();
   switch (key) {
     case "api_token": return config.core.api_token;
+    case "log_dir": return config.log.dir;
+    case "log_level": return config.log.level;
     case "qbit_url": return config.qbittorrent.url;
     case "qbit_username": return config.qbittorrent.username;
     case "qbit_password": return config.qbittorrent.password || "";
+    case "qbit_tag": return config.qbittorrent.tag;
+    case "qbit_download_dir_anime": return config.qbittorrent.download_dirs.anime;
+    case "qbit_download_dir_tv": return config.qbittorrent.download_dirs.tv;
+    case "qbit_download_dir_movie": return config.qbittorrent.download_dirs.movie;
     case "tmdb_token": return config.tmdb.token;
     case "media_dir_anime": return config.media_dirs.anime;
     case "media_dir_tv": return config.media_dirs.tv;
@@ -133,9 +168,15 @@ export function updateConfigValues(updates: Record<string, string>): void {
   for (const [key, value] of Object.entries(updates)) {
     switch (key) {
       case "api_token": config.core.api_token = value; break;
+      case "log_dir": config.log.dir = value; break;
+      case "log_level": config.log.level = value; break;
       case "qbit_url": config.qbittorrent.url = value; break;
       case "qbit_username": config.qbittorrent.username = value; break;
       case "qbit_password": config.qbittorrent.password = value; break;
+      case "qbit_tag": config.qbittorrent.tag = value; break;
+      case "qbit_download_dir_anime": config.qbittorrent.download_dirs.anime = value; break;
+      case "qbit_download_dir_tv": config.qbittorrent.download_dirs.tv = value; break;
+      case "qbit_download_dir_movie": config.qbittorrent.download_dirs.movie = value; break;
       case "tmdb_token": config.tmdb.token = value; break;
       case "media_dir_anime": config.media_dirs.anime = value; break;
       case "media_dir_tv": config.media_dirs.tv = value; break;

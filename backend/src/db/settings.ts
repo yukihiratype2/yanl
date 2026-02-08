@@ -13,9 +13,15 @@ export function getAllSettings(): Record<string, string> {
   const config = loadConfig();
   return {
     api_token: config.core.api_token,
+    log_dir: config.log.dir,
+    log_level: config.log.level,
     qbit_url: config.qbittorrent.url,
     qbit_username: config.qbittorrent.username,
     qbit_password: config.qbittorrent.password || "",
+    qbit_tag: config.qbittorrent.tag,
+    qbit_download_dir_anime: config.qbittorrent.download_dirs.anime,
+    qbit_download_dir_tv: config.qbittorrent.download_dirs.tv,
+    qbit_download_dir_movie: config.qbittorrent.download_dirs.movie,
     tmdb_token: config.tmdb.token,
     media_dir_anime: config.media_dirs.anime,
     media_dir_tv: config.media_dirs.tv,

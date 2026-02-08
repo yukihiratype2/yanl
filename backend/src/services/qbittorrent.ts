@@ -1,4 +1,5 @@
 import { getSetting } from "../db/settings";
+import { logger } from "./logger";
 
 let sid: string | null = null;
 
@@ -13,23 +14,47 @@ async function login(): Promise<string> {
   const username = getSetting("qbit_username") || "admin";
   const password = getSetting("qbit_password") || "";
 
+  logger.info(
+    { path: "/api/v2/auth/login", method: "POST" },
+    "qBittorrent API request"
+  );
   const params = new URLSearchParams();
   params.append("username", username);
   params.append("password", password);
 
-  const response = await fetch(`${baseUrl}/api/v2/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      // Referer is required by some qBittorrent versions/configurations (CSRF protection)
-      "Referer": baseUrl, 
-    },
-    body: params.toString(),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/api/v2/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        // Referer is required by some qBittorrent versions/configurations (CSRF protection)
+        "Referer": baseUrl,
+      },
+      body: params.toString(),
+    });
+  } catch (err) {
+    logger.error(
+      { path: "/api/v2/auth/login", method: "POST", err },
+      "qBittorrent request failed"
+    );
+    throw err;
+  }
+
+  logger.info(
+    { path: "/api/v2/auth/login", method: "POST", status: response.status },
+    "qBittorrent API response"
+  );
 
   if (!response.ok) {
-     // qBittorrent returns 403 for banned IP
-    throw new Error(`qBittorrent login failed: ${response.status} ${response.statusText}`);
+    logger.error(
+      { path: "/api/v2/auth/login", method: "POST", status: response.status },
+      "qBittorrent login failed"
+    );
+    // qBittorrent returns 403 for banned IP
+    throw new Error(
+      `qBittorrent login failed: ${response.status} ${response.statusText}`
+    );
   }
 
   const setCookie = response.headers.get("set-cookie");
@@ -73,30 +98,50 @@ async function qbitFetch(
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
+  const method = (options.method || "GET").toString().toUpperCase();
   
   if (sid) {
     headers["Cookie"] = `SID=${sid}`;
   }
 
-  let response = await fetch(`${baseUrl}${path}`, {
-    ...options,
-    headers,
-  });
-
-  // If 403, try re-login. 
-  // Note: 403 can also mean "Forbidden" for other reasons, but commonly it's session expiry.
-  if (response.status === 403) {
-    console.warn("qBittorrent returned 403, refreshing session...");
-    await login();
-    if (sid) {
-      headers["Cookie"] = `SID=${sid}`;
-    }
+  logger.info({ path, method }, "qBittorrent API request");
+  let response: Response;
+  try {
     response = await fetch(`${baseUrl}${path}`, {
       ...options,
       headers,
     });
+  } catch (err) {
+    logger.error({ path, method, err }, "qBittorrent request failed");
+    throw err;
   }
 
+  // If 403, try re-login. 
+  // Note: 403 can also mean "Forbidden" for other reasons, but commonly it's session expiry.
+  if (response.status === 403) {
+    logger.warn(
+      { path, method },
+      "qBittorrent returned 403, refreshing session"
+    );
+    await login();
+    if (sid) {
+      headers["Cookie"] = `SID=${sid}`;
+    }
+    try {
+      response = await fetch(`${baseUrl}${path}`, {
+        ...options,
+        headers,
+      });
+    } catch (err) {
+      logger.error({ path, method, err }, "qBittorrent retry failed");
+      throw err;
+    }
+  }
+
+  logger.info({ path, method, status: response.status }, "qBittorrent API response");
+  if (!response.ok) {
+    logger.error({ path, method, status: response.status }, "qBittorrent API error");
+  }
   return response;
 }
 
@@ -113,6 +158,13 @@ export interface AddTorrentOptions {
   autoTMM?: boolean;
   sequentialDownload?: boolean;
   firstLastPiecePrio?: boolean;
+}
+
+export function getQbitDownloadDir(
+  mediaType: "anime" | "tv" | "movie"
+): string | undefined {
+  const dir = (getSetting(`qbit_download_dir_${mediaType}`) || "").trim();
+  return dir ? dir : undefined;
 }
 
 /**
@@ -136,6 +188,22 @@ export async function addTorrentByUrl(
     if (category) options.category = category;
   } else if (typeof optionsOrSavePath === "object") {
     options = optionsOrSavePath;
+  }
+
+  const defaultTag = (getSetting("qbit_tag") || "").trim();
+  if (defaultTag) {
+    if (options.tags) {
+      const existing = options.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+      if (!existing.includes(defaultTag)) {
+        existing.push(defaultTag);
+      }
+      options.tags = existing.join(",");
+    } else {
+      options.tags = defaultTag;
+    }
   }
 
   if (options.savepath) formData.append("savepath", options.savepath);

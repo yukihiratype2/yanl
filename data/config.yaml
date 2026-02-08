@@ -1,5 +1,8 @@
 core:
   api_token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz
+log:
+  dir: /Users/natsuki/Work/nas-tools/backend/log
+  level: debug
 qbittorrent:
   url: http://192.168.2.33:8090
   username: admin

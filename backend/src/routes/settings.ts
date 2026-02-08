@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getAllSettings, setSettings, getSetting } from "../db/settings";
 import { testAIConfig } from "../services/ai";
+import { reconfigureLogger } from "../services/logger";
 
 const settingsRoutes = new Hono();
 
@@ -18,6 +19,8 @@ settingsRoutes.put("/", async (c) => {
   // Prevent changing api_token through this endpoint
   delete body.api_token;
   setSettings(body);
+  // Apply log settings (dir/level) immediately when updated.
+  reconfigureLogger();
   return c.json({ success: true });
 });
 

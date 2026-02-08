@@ -97,7 +97,34 @@ For each title, extract the following fields when available:
 
 Return ONLY a JSON array with the same length and order as the input.
 Use null for fields you cannot determine.
+Return episodeNumber and seasonNumber as numbers (not strings).
 No markdown, no extra text.
+
+Example response for 2 titles:
+[
+  {
+    "englishTitle": "Frieren: Beyond Journey's End",
+    "chineseTitle": "葬送的芙莉莲",
+    "resolution": "1080p",
+    "subTeam": "Lilith-Raws",
+    "format": "WEB-DL",
+    "size": "1.4GB",
+    "episodeNumber": 12,
+    "seasonNumber": 1,
+    "subtitleLanguage": "CHS"
+  },
+  {
+    "englishTitle": null,
+    "chineseTitle": "迷宫饭",
+    "resolution": "720p",
+    "subTeam": null,
+    "format": "HEVC",
+    "size": null,
+    "episodeNumber": null,
+    "seasonNumber": null,
+    "subtitleLanguage": null
+  }
+]
 `;
 
   try {

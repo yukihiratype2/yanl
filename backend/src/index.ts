@@ -27,7 +27,7 @@ app.use("*", cors());
 app.use(
   "*",
   honoLogger((message, ...rest) => {
-    logger.info({ rest }, message);
+    logger.trace({ rest }, message);
   })
 );
 

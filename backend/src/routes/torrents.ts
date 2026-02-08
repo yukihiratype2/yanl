@@ -2,11 +2,12 @@ import { Hono } from "hono";
 import { searchTorrents } from "../services/rss";
 import {
   addTorrentByUrl,
+  getQbitDownloadDir,
   pauseTorrents,
   resumeTorrents,
   deleteTorrents,
 } from "../services/qbittorrent";
-import { createTorrent, getSubscriptionById } from "../db/models";
+import { createTorrent, getSubscriptionById, updateEpisode } from "../db/models";
 
 const torrentRoutes = new Hono();
 
@@ -43,9 +44,21 @@ torrentRoutes.post("/download", async (c) => {
   }
 
   try {
-    const success = await addTorrentByUrl(body.link, sub.folder_path || undefined);
+    const savepath = getQbitDownloadDir(sub.media_type);
+    const success = await addTorrentByUrl(body.link, {
+      savepath,
+      category: sub.media_type,
+    });
     if (!success) {
       return c.json({ error: "Failed to add torrent to qBittorrent" }, 500);
+    }
+
+    if (body.episode_id) {
+      let hash: string | null = null;
+      if (body.link.startsWith("magnet:?xt=urn:btih:")) {
+        hash = body.link.split("xt=urn:btih:")[1].split("&")[0].toLowerCase();
+      }
+      updateEpisode(body.episode_id, { status: "downloading", torrent_hash: hash });
     }
 
     const torrent = createTorrent({

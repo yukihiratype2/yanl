@@ -60,6 +60,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS episodes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       subscription_id INTEGER NOT NULL,
+      season_number INTEGER,
       episode_number INTEGER NOT NULL,
       title TEXT,
       air_date TEXT,
@@ -107,6 +108,7 @@ export function initDatabase() {
 
   ensureColumn("profiles", "is_default", "is_default INTEGER NOT NULL DEFAULT 0");
   ensureColumn("subscriptions", "profile_id", "profile_id INTEGER");
+  ensureColumn("episodes", "season_number", "season_number INTEGER");
 
   const subColumns = columnsFor("subscriptions");
   const hasLegacyTmdbId = subColumns.includes("tmdb_id");

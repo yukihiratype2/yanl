@@ -24,6 +24,7 @@ export interface Subscription {
 export interface Episode {
   id: number;
   subscription_id: number;
+  season_number: number | null;
   episode_number: number;
   title: string | null;
   air_date: string | null;
@@ -177,11 +178,12 @@ export function createEpisode(
 ): Episode {
   const result = db
     .prepare(
-      `INSERT INTO episodes (subscription_id, episode_number, title, air_date, overview, still_path, status, torrent_hash, file_path)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO episodes (subscription_id, season_number, episode_number, title, air_date, overview, still_path, status, torrent_hash, file_path)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       ep.subscription_id,
+      ep.season_number,
       ep.episode_number,
       ep.title,
       ep.air_date,

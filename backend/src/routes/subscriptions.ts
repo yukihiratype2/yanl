@@ -161,6 +161,7 @@ subscriptionRoutes.post("/", async (c) => {
           for (const ep of seasonDetail.episodes) {
             createEpisode({
               subscription_id: sub.id,
+              season_number: seasonNum,
               episode_number: ep.episode_number,
               title: ep.name,
               air_date: ep.air_date,
@@ -187,6 +188,7 @@ subscriptionRoutes.post("/", async (c) => {
             const airDate = ep.airdate && ep.airdate.trim().length > 0 ? ep.airdate : null;
             createEpisode({
               subscription_id: sub.id,
+              season_number: null,
               episode_number: episodeNumber,
               title: titleText,
               air_date: airDate,

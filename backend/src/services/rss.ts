@@ -34,9 +34,10 @@ const parser = new XMLParser({
 export async function fetchMikanRSS(keyword: string): Promise<RSSItem[]> {
   const url = `https://mikanani.me/RSS/Search?searchstr=${encodeURIComponent(keyword)}`;
   try {
+    logger.debug({ keyword, url }, "Mikan RSS search query");
     const response = await fetch(url);
     if (!response.ok) {
-    logger.warn({ status: response.status }, "Mikan RSS fetch failed");
+      logger.warn({ status: response.status }, "Mikan RSS fetch failed");
       return [];
     }
     const xml = await response.text();
@@ -50,9 +51,10 @@ export async function fetchMikanRSS(keyword: string): Promise<RSSItem[]> {
 export async function fetchDmhyRSS(keyword: string): Promise<RSSItem[]> {
   const url = `https://share.dmhy.org/topics/rss/rss.xml?keyword=${encodeURIComponent(keyword)}`;
   try {
+    logger.debug({ keyword, url }, "DMHY RSS search query");
     const response = await fetch(url);
     if (!response.ok) {
-    logger.warn({ status: response.status }, "DMHY RSS fetch failed");
+      logger.warn({ status: response.status }, "DMHY RSS fetch failed");
       return [];
     }
     const xml = await response.text();
@@ -136,8 +138,26 @@ export async function searchTorrents(
     episode?: number | string | null;
   }
 ): Promise<RSSItem[]> {
-  const seasonPart = options?.season ? `Season ${options.season}` : "";
-  const episodePart = options?.episode ? String(options.episode) : "";
+  const seasonValue = options?.season;
+  const seasonNumber =
+    seasonValue === null || seasonValue === undefined || seasonValue === ""
+      ? null
+      : Number(seasonValue);
+  const seasonPart =
+    seasonNumber && !Number.isNaN(seasonNumber) && seasonNumber > 1
+      ? `S${seasonNumber}`
+      : "";
+  const episodeValue = options?.episode;
+  const episodeNumber =
+    episodeValue === null || episodeValue === undefined || episodeValue === ""
+      ? null
+      : Number(episodeValue);
+  const episodePart =
+    episodeNumber !== null && !Number.isNaN(episodeNumber)
+      ? String(episodeNumber).padStart(2, "0")
+      : episodeValue
+        ? String(episodeValue)
+        : "";
   const query = [keyword, seasonPart, episodePart].filter(Boolean).join(" ");
   const [mikanResults, dmhyResults] = await Promise.all([
     fetchMikanRSS(query),
