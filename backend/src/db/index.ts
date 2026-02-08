@@ -16,6 +16,23 @@ export default db;
 
 export function initDatabase() {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      resolutions TEXT,
+      qualities TEXT,
+      formats TEXT,
+      encoders TEXT,
+      min_size_mb REAL,
+      max_size_mb REAL,
+      preferred_keywords TEXT,
+      excluded_keywords TEXT,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS subscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       tmdb_id INTEGER NOT NULL,
@@ -31,9 +48,11 @@ export function initDatabase() {
       total_episodes INTEGER,
       status TEXT DEFAULT 'active',
       folder_path TEXT,
+      profile_id INTEGER,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
-      UNIQUE(tmdb_id, media_type, season_number)
+      UNIQUE(tmdb_id, media_type, season_number),
+      FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS episodes (
@@ -69,22 +88,23 @@ export function initDatabase() {
       FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE SET NULL
     );
 
-    CREATE TABLE IF NOT EXISTS profiles (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      description TEXT,
-      resolutions TEXT,
-      qualities TEXT,
-      formats TEXT,
-      encoders TEXT,
-      min_size_mb REAL,
-      max_size_mb REAL,
-      preferred_keywords TEXT,
-      excluded_keywords TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
   `);
+
+  const columnsFor = (table: string): string[] =>
+    db
+      .prepare(`PRAGMA table_info(${table})`)
+      .all()
+      .map((row: any) => row.name);
+
+  const ensureColumn = (table: string, column: string, ddl: string) => {
+    const columns = columnsFor(table);
+    if (!columns.includes(column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+    }
+  };
+
+  ensureColumn("profiles", "is_default", "is_default INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("subscriptions", "profile_id", "profile_id INTEGER");
 
   console.log("Database initialized successfully");
 }

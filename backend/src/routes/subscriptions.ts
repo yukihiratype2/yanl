@@ -10,6 +10,8 @@ import {
   getEpisodesBySubscription,
   createEpisode,
   getTorrentsBySubscription,
+  getDefaultProfile,
+  getProfileById,
 } from "../db/models";
 import { getTVDetail, getMovieDetail, getSeasonDetail } from "../services/tmdb";
 import { createMediaFolder } from "../services/fileManager";
@@ -41,9 +43,22 @@ subscriptionRoutes.post("/", async (c) => {
     tmdb_id: number;
     media_type: "anime" | "tv" | "movie";
     season_number?: number;
+    profile_id?: number | null;
   }>();
 
   const { tmdb_id, media_type, season_number } = body;
+  let profileId: number | null =
+    body.profile_id !== undefined ? body.profile_id : null;
+
+  if (profileId != null) {
+    const profile = getProfileById(profileId);
+    if (!profile) {
+      return c.json({ error: "Profile not found" }, 400);
+    }
+  } else {
+    const defaultProfile = getDefaultProfile();
+    profileId = defaultProfile ? defaultProfile.id : null;
+  }
 
   // Check if already subscribed
   const existing = getSubscriptionByTmdbId(tmdb_id, media_type, season_number);
@@ -106,6 +121,7 @@ subscriptionRoutes.post("/", async (c) => {
       total_episodes: totalEpisodes,
       status: "active",
       folder_path: folderPath,
+      profile_id: profileId,
     });
 
     // Fetch and create episodes for TV/anime

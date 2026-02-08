@@ -5,6 +5,7 @@ import {
   createProfile,
   updateProfile,
   deleteProfile,
+  setDefaultProfile,
   type Profile,
 } from "../db/models";
 
@@ -39,6 +40,7 @@ profileRoutes.post("/", async (c) => {
     max_size_mb?: number;
     preferred_keywords?: string[];
     excluded_keywords?: string[];
+    is_default?: boolean;
   }>();
 
   if (!body.name || !body.name.trim()) {
@@ -61,7 +63,12 @@ profileRoutes.post("/", async (c) => {
       excluded_keywords: body.excluded_keywords
         ? JSON.stringify(body.excluded_keywords)
         : null,
+      is_default: body.is_default ? 1 : 0,
     });
+    if (body.is_default) {
+      setDefaultProfile(profile.id);
+      return c.json(getProfileById(profile.id), 201);
+    }
     return c.json(profile, 201);
   } catch (err: any) {
     if (err.message?.includes("UNIQUE constraint")) {
@@ -90,6 +97,7 @@ profileRoutes.put("/:id", async (c) => {
     max_size_mb?: number | null;
     preferred_keywords?: string[];
     excluded_keywords?: string[];
+    is_default?: boolean;
   }>();
 
   const data: Partial<Profile> = {};
@@ -108,8 +116,12 @@ profileRoutes.put("/:id", async (c) => {
     data.preferred_keywords = JSON.stringify(body.preferred_keywords);
   if (body.excluded_keywords !== undefined)
     data.excluded_keywords = JSON.stringify(body.excluded_keywords);
+  if (body.is_default === false) data.is_default = 0;
 
   try {
+    if (body.is_default === true) {
+      setDefaultProfile(id);
+    }
     updateProfile(id, data);
     return c.json(getProfileById(id));
   } catch (err: any) {

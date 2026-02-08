@@ -15,6 +15,7 @@ export interface Subscription {
   total_episodes: number | null;
   status: string;
   folder_path: string | null;
+  profile_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -61,6 +62,7 @@ export interface Profile {
   max_size_mb: number | null;
   preferred_keywords: string | null; // JSON array
   excluded_keywords: string | null; // JSON array
+  is_default: number;
   created_at: string;
   updated_at: string;
 }
@@ -111,8 +113,8 @@ export function createSubscription(
 ): Subscription {
   const result = db
     .prepare(
-      `INSERT INTO subscriptions (tmdb_id, media_type, title, title_original, overview, poster_path, backdrop_path, first_air_date, vote_average, season_number, total_episodes, status, folder_path)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO subscriptions (tmdb_id, media_type, title, title_original, overview, poster_path, backdrop_path, first_air_date, vote_average, season_number, total_episodes, status, folder_path, profile_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       sub.tmdb_id,
@@ -127,7 +129,8 @@ export function createSubscription(
       sub.season_number,
       sub.total_episodes,
       sub.status,
-      sub.folder_path
+      sub.folder_path,
+      sub.profile_id
     );
   return getSubscriptionById(Number(result.lastInsertRowid))!;
 }
@@ -277,7 +280,7 @@ export function getEpisodesWithAirDateRange(
 
 export function getAllProfiles(): Profile[] {
   return db
-    .prepare("SELECT * FROM profiles ORDER BY name ASC")
+    .prepare("SELECT * FROM profiles ORDER BY is_default DESC, name ASC")
     .all() as Profile[];
 }
 
@@ -287,13 +290,25 @@ export function getProfileById(id: number): Profile | undefined {
     .get(id) as Profile | undefined;
 }
 
+export function getDefaultProfile(): Profile | undefined {
+  return db
+    .prepare("SELECT * FROM profiles WHERE is_default = 1 LIMIT 1")
+    .get() as Profile | undefined;
+}
+
+export function setDefaultProfile(id: number): void {
+  db.prepare(
+    "UPDATE profiles SET is_default = CASE WHEN id = ? THEN 1 ELSE 0 END, updated_at = datetime('now')"
+  ).run(id);
+}
+
 export function createProfile(
   profile: Omit<Profile, "id" | "created_at" | "updated_at">
 ): Profile {
   const result = db
     .prepare(
-      `INSERT INTO profiles (name, description, resolutions, qualities, formats, encoders, min_size_mb, max_size_mb, preferred_keywords, excluded_keywords)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO profiles (name, description, resolutions, qualities, formats, encoders, min_size_mb, max_size_mb, preferred_keywords, excluded_keywords, is_default)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       profile.name,
@@ -305,7 +320,8 @@ export function createProfile(
       profile.min_size_mb,
       profile.max_size_mb,
       profile.preferred_keywords,
-      profile.excluded_keywords
+      profile.excluded_keywords,
+      profile.is_default ?? 0
     );
   return getProfileById(Number(result.lastInsertRowid))!;
 }
