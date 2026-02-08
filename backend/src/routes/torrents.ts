@@ -13,12 +13,14 @@ const torrentRoutes = new Hono();
 // Search torrents via RSS
 torrentRoutes.get("/search", async (c) => {
   const keyword = c.req.query("q");
+  const episode = c.req.query("episode");
+  const season = c.req.query("season");
   if (!keyword) {
     return c.json({ error: "Missing query parameter 'q'" }, 400);
   }
 
   try {
-    const results = await searchTorrents(keyword);
+    const results = await searchTorrents(keyword, { season, episode });
     return c.json(results);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);

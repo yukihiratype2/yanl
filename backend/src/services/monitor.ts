@@ -17,8 +17,7 @@ import * as rss from "./rss";
 import * as ai from "./ai";
 import * as qbittorrent from "./qbittorrent";
 import * as fileManager from "./fileManager";
-import { getSetting } from "../db/settings";
-import { join } from "path";
+import { logger } from "./logger";
 
 // ---- Job Tracking ----
 
@@ -130,20 +129,20 @@ function registerJob(name: string, description: string, schedule: string, fn: ()
 
 async function runJobInternal(entry: JobEntry) {
   if (entry.running) {
-    console.log(`Job "${entry.name}" already running, skipping.`);
+    logger.warn({ job: entry.name }, "Job already running, skipping.");
     return;
   }
 
   entry.running = true;
   entry.lastRunError = null;
   const start = Date.now();
-  console.log(`Running job: ${entry.name}`);
+  logger.info({ job: entry.name }, "Running job");
 
   try {
     await entry.fn();
   } catch (err: any) {
     entry.lastRunError = err?.message || String(err);
-    console.error(`Job "${entry.name}" failed:`, err);
+    logger.error({ job: entry.name, err }, "Job failed");
   } finally {
     entry.lastRunAt = new Date();
     entry.lastRunDurationMs = Date.now() - start;
@@ -179,7 +178,7 @@ const JOB_SCHEDULES = {
 };
 
 export function startMonitor() {
-  console.log("Starting background monitor...");
+  logger.info("Starting background monitor...");
 
   registerJob("checkNewEpisodes", "Check TMDB for newly aired episodes", JOB_SCHEDULES.checkNewEpisodes, checkNewEpisodes);
   registerJob("searchAndDownload", "Search RSS feeds and start downloads", JOB_SCHEDULES.searchAndDownload, searchAndDownload);
@@ -194,20 +193,20 @@ async function checkNewEpisodes() {
   const subscriptions = getActiveSubscriptions();
 
   for (const sub of subscriptions) {
-    if (sub.source === "tvdb" && sub.media_type === "tv") {
-      try {
-        await processTVSubscription(sub);
-      } catch (err) {
-        console.error(`Error processing TV sub ${sub.title}:`, err);
+      if (sub.source === "tvdb" && sub.media_type === "tv") {
+        try {
+          await processTVSubscription(sub);
+        } catch (err) {
+          logger.error({ subscription: sub.title, err }, "Error processing TV subscription");
+        }
       }
-    }
-    if (sub.source === "bgm" && sub.media_type !== "movie") {
-      try {
-        await processBgmSubscription(sub);
-      } catch (err) {
-        console.error(`Error processing BGM sub ${sub.title}:`, err);
+      if (sub.source === "bgm" && sub.media_type !== "movie") {
+        try {
+          await processBgmSubscription(sub);
+        } catch (err) {
+          logger.error({ subscription: sub.title, err }, "Error processing BGM subscription");
+        }
       }
-    }
     // Movies are single-item, handled by status check usually,
     // but we can check if a movie "Just Released" here if we want to change status to 'searching'.
     // For now, assuming movies in 'active' status are ready to be searched.
@@ -241,7 +240,14 @@ async function processTVSubscription(sub: Subscription) {
   for (const ep of seasonData.episodes) {
     if (ep.air_date && ep.air_date <= today && !existingEpMap.has(ep.episode_number)) {
       // New episode aired!
-      console.log(`Found new episode for ${sub.title}: S${seasonData.season_number}E${ep.episode_number}`);
+        logger.info(
+          {
+            subscription: sub.title,
+            season: seasonData.season_number,
+            episode: ep.episode_number,
+          },
+          "Found new episode"
+        );
       createEpisode({
         subscription_id: sub.id,
         episode_number: ep.episode_number,
@@ -292,17 +298,21 @@ async function searchAndDownload() {
   for (const sub of subscriptions) {
     if (sub.media_type === "tv" || sub.media_type === "anime") {
       const episodes = getEpisodesBySubscription(sub.id);
-      const pendingEps = episodes.filter((e) => e.status === "pending");
+      const today = new Date().toISOString().split("T")[0];
+      const pendingEps = episodes.filter((e) => {
+        if (e.status !== "pending") return false;
+        if (!e.air_date) return true;
+        return e.air_date <= today;
+      });
 
       if (pendingEps.length === 0) continue;
 
-      // Search for the show once (optimization)
-      // Or search per episode? RSS usually returns latest.
-      // Better to search "Show Name Season X"
-      const query = `${sub.title} ${sub.season_number ? "Season " + sub.season_number : ""}`;
-      const searchResults = await rss.searchTorrents(query);
-
       for (const ep of pendingEps) {
+        // Search per episode to narrow results.
+        const searchResults = await rss.searchTorrents(sub.title, {
+          season: sub.season_number,
+          episode: ep.episode_number,
+        });
         // Try to match matching results
         for (const item of searchResults) {
           const parseResult = item.ai;
@@ -324,7 +334,14 @@ async function searchAndDownload() {
                continue;
             }
 
-            console.log(`Found match for ${sub.title} Ep ${ep.episode_number}: ${item.title}`);
+            logger.info(
+              {
+                subscription: sub.title,
+                episode: ep.episode_number,
+                result: item.title,
+              },
+              "Found RSS match"
+            );
             
             try {
               // Add to qBittorrent
@@ -366,7 +383,7 @@ async function searchAndDownload() {
 
               break; // Found one, move to next episode
             } catch (err) {
-              console.error(`Failed to add torrent ${item.title}`, err);
+              logger.error({ title: item.title, err }, "Failed to add torrent");
             }
           }
         }
@@ -374,8 +391,7 @@ async function searchAndDownload() {
 
     } else if (sub.media_type === "movie" && sub.status === "active") {
         // Simple movie logic
-        const query = sub.title;
-        const searchResults = await rss.searchTorrents(query);
+        const searchResults = await rss.searchTorrents(sub.title);
         for (const item of searchResults) {
             const parseResult = item.ai;
             if (!parseResult) continue;
@@ -387,7 +403,7 @@ async function searchAndDownload() {
               sub.title.toLowerCase().includes(parseResult.chineseTitle?.toLowerCase() || "");
 
             if (nameMatch) {
-                 console.log(`Found movie match: ${item.title}`);
+                 logger.info({ subscription: sub.title, title: item.title }, "Found movie match");
                  try {
                      await qbittorrent.addTorrentByUrl(item.link, "nas-tools-movies");
                      
@@ -411,7 +427,7 @@ async function searchAndDownload() {
                      
                      break; 
                  } catch (err) {
-                     console.error("Movie add error", err);
+                     logger.error({ subscription: sub.title, err }, "Movie torrent add error");
                  }
             }
         }
@@ -435,8 +451,8 @@ async function monitorDownloads() {
   let qbitTorrents;
   try {
     qbitTorrents = await qbittorrent.getTorrents();
-  } catch(e) { 
-    console.error("QBit connection validation", e);
+  } catch (e) {
+    logger.error({ err: e }, "QBit connection validation failed");
     return;
   }
 
@@ -458,7 +474,7 @@ async function monitorDownloads() {
              if (torrent) {
                  if (torrent.state === "uploading" || torrent.state === "stalledUP" || torrent.state === "pausedUP" || torrent.progress === 1) {
                      // Finished!
-                     console.log(`Download complete: ${ep.title}`);
+                     logger.info({ subscription: sub.title, episode: ep.title }, "Episode download complete");
                      
                      // Move file
                      // torrent.content_path could be file or folder.
@@ -489,7 +505,7 @@ async function monitorDownloads() {
                         // Cleanup torrent?
                         // await qbittorrent.deleteRequest(torrent.hash); 
                      } catch(err) {
-                         console.error("Move file error", err);
+                         logger.error({ err }, "Episode file move error");
                      }
                  }
              }
@@ -503,7 +519,7 @@ async function monitorDownloads() {
              const torrent = qbitTorrents.find(t => t.hash.toLowerCase() === activeTorrentRecord.hash!.toLowerCase());
              if (torrent) {
                 if (torrent.state === "uploading" || torrent.state === "stalledUP" || torrent.state === "pausedUP" || torrent.progress === 1) {
-                    console.log(`Movie download complete: ${sub.title}`);
+                    logger.info({ subscription: sub.title }, "Movie download complete");
                     
                     let sourceFile = torrent.content_path;
                     const files = fileManager.findVideoFiles(torrent.content_path);
@@ -521,7 +537,7 @@ async function monitorDownloads() {
                         updateSubscription(sub.id, { status: "completed" });
                         // update torrent status?
                     } catch(err) {
-                        console.error("Movie move error", err);
+                        logger.error({ err }, "Movie file move error");
                     }
                 }
              }

@@ -129,10 +129,19 @@ function parseRSS(xml: string, source: string): RSSItem[] {
   }
 }
 
-export async function searchTorrents(keyword: string): Promise<RSSItem[]> {
+export async function searchTorrents(
+  keyword: string,
+  options?: {
+    season?: number | string | null;
+    episode?: number | string | null;
+  }
+): Promise<RSSItem[]> {
+  const seasonPart = options?.season ? `Season ${options.season}` : "";
+  const episodePart = options?.episode ? String(options.episode) : "";
+  const query = [keyword, seasonPart, episodePart].filter(Boolean).join(" ");
   const [mikanResults, dmhyResults] = await Promise.all([
-    fetchMikanRSS(keyword),
-    fetchDmhyRSS(keyword),
+    fetchMikanRSS(query),
+    fetchDmhyRSS(query),
   ]);
   const results = [...mikanResults, ...dmhyResults];
   const titles = results.map((item) => item.title);

@@ -22,3 +22,103 @@
 {"level":30,"time":"2026-02-08T10:59:56.159Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> PUT /api/settings \u001b[32m200\u001b[0m 5ms"}
 {"level":30,"time":"2026-02-08T10:59:57.341Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- POST /api/settings/test-qbit"}
 {"level":30,"time":"2026-02-08T10:59:57.423Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> POST /api/settings/test-qbit \u001b[32m200\u001b[0m 82ms"}
+{"level":30,"time":"2026-02-08T11:05:13.695Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/subscriptions"}
+{"level":30,"time":"2026-02-08T11:05:13.696Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/subscriptions \u001b[32m200\u001b[0m 1ms"}
+{"level":30,"time":"2026-02-08T11:05:13.696Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/subscriptions"}
+{"level":30,"time":"2026-02-08T11:05:13.697Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/subscriptions \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:17.125Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/subscriptions/3"}
+{"level":30,"time":"2026-02-08T11:05:17.126Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/subscriptions/3 \u001b[32m200\u001b[0m 1ms"}
+{"level":30,"time":"2026-02-08T11:05:21.248Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:21.248Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:21.248Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:21.248Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:21.250Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:21.250Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:21.256Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:21.256Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:22.232Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/profiles"}
+{"level":30,"time":"2026-02-08T11:05:22.232Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/profiles \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:22.233Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/profiles"}
+{"level":30,"time":"2026-02-08T11:05:22.233Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/profiles \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:25.254Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:25.254Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:25.255Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:25.255Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:25.255Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:25.256Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 1ms"}
+{"level":30,"time":"2026-02-08T11:05:25.260Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:25.260Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:25.894Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/profiles"}
+{"level":30,"time":"2026-02-08T11:05:25.895Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/profiles \u001b[32m200\u001b[0m 1ms"}
+{"level":30,"time":"2026-02-08T11:05:25.895Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/profiles"}
+{"level":30,"time":"2026-02-08T11:05:25.895Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/profiles \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:49.449Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:49.449Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:49.449Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:49.449Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:49.450Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:49.451Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 1ms"}
+{"level":30,"time":"2026-02-08T11:05:49.454Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:49.455Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:52.125Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/subscriptions"}
+{"level":30,"time":"2026-02-08T11:05:52.125Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/subscriptions \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:52.126Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/subscriptions"}
+{"level":30,"time":"2026-02-08T11:05:52.126Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/subscriptions \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:55.442Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/calendar?start=2026-02-01&end=2026-02-28"}
+{"level":30,"time":"2026-02-08T11:05:55.442Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/calendar?start=2026-02-01&end=2026-02-28 \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:55.442Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/calendar?start=2026-02-01&end=2026-02-28"}
+{"level":30,"time":"2026-02-08T11:05:55.442Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/calendar?start=2026-02-01&end=2026-02-28 \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:57.249Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/profiles"}
+{"level":30,"time":"2026-02-08T11:05:57.250Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/profiles \u001b[32m200\u001b[0m 1ms"}
+{"level":30,"time":"2026-02-08T11:05:57.250Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/profiles"}
+{"level":30,"time":"2026-02-08T11:05:57.250Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/profiles \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:59.466Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:59.466Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:59.466Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:05:59.466Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:59.467Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:59.467Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:05:59.472Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:05:59.473Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":50,"time":"2026-02-08T11:06:16.837Z","pid":63044,"hostname":"Matebook-Pro-X.local","err":{"type":"DOMException","message":"The operation timed out.","stack":"","code":23,"name":"TimeoutError","INDEX_SIZE_ERR":1,"DOMSTRING_SIZE_ERR":2,"HIERARCHY_REQUEST_ERR":3,"WRONG_DOCUMENT_ERR":4,"INVALID_CHARACTER_ERR":5,"NO_DATA_ALLOWED_ERR":6,"NO_MODIFICATION_ALLOWED_ERR":7,"NOT_FOUND_ERR":8,"NOT_SUPPORTED_ERR":9,"INUSE_ATTRIBUTE_ERR":10,"INVALID_STATE_ERR":11,"SYNTAX_ERR":12,"INVALID_MODIFICATION_ERR":13,"NAMESPACE_ERR":14,"INVALID_ACCESS_ERR":15,"VALIDATION_ERR":16,"TYPE_MISMATCH_ERR":17,"SECURITY_ERR":18,"NETWORK_ERR":19,"ABORT_ERR":20,"URL_MISMATCH_ERR":21,"QUOTA_EXCEEDED_ERR":22,"TIMEOUT_ERR":23,"INVALID_NODE_TYPE_ERR":24,"DATA_CLONE_ERR":25},"msg":"Error parsing titles with AI"}
+{"level":30,"time":"2026-02-08T11:10:16.993Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:10:16.999Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:14:19.677Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:14:19.683Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:14:24.235Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:14:24.239Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:14:30.965Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:14:30.971Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:17:16.887Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:17:16.892Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:17:22.443Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:17:22.448Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:17:37.612Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:17:37.617Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:18:56.125Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:18:56.130Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:21:04.870Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- POST /api/settings/test-qbit"}
+{"level":30,"time":"2026-02-08T11:21:04.934Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> POST /api/settings/test-qbit \u001b[32m200\u001b[0m 64ms"}
+{"level":30,"time":"2026-02-08T11:21:14.028Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:21:14.028Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:21:14.044Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:21:14.045Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 1ms"}
+{"level":30,"time":"2026-02-08T11:21:16.786Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/settings"}
+{"level":30,"time":"2026-02-08T11:21:16.786Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/settings \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:21:16.794Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:21:16.794Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:21:18.548Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"<-- GET /api/monitor/jobs"}
+{"level":30,"time":"2026-02-08T11:21:18.548Z","pid":63044,"hostname":"Matebook-Pro-X.local","rest":[],"msg":"--> GET /api/monitor/jobs \u001b[32m200\u001b[0m 0ms"}
+{"level":30,"time":"2026-02-08T11:21:40.987Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T11:21:41.000Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:21:41.005Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:22:34.181Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T11:22:34.181Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T11:22:34.194Z","pid":63044,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T11:22:34.194Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:22:34.200Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T11:23:10.840Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T11:23:10.840Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T11:23:10.853Z","pid":63044,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T11:23:10.854Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T11:23:10.859Z","pid":63044,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}

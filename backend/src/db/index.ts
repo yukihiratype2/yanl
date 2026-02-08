@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { join } from "path";
 import { mkdirSync } from "fs";
+import { logger } from "../services/logger";
 
 const dataDir = join(import.meta.dir, "..", "..", "data");
 mkdirSync(dataDir, { recursive: true });
@@ -186,5 +187,5 @@ export function initDatabase() {
     ensureColumn("subscriptions", "source_id", "source_id INTEGER");
   }
 
-  console.log("Database initialized successfully");
+  logger.info("Database initialized successfully");
 }
