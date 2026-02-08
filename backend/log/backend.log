@@ -109,3 +109,12 @@
 {"level":30,"time":"2026-02-08T16:15:40.146Z","pid":26409,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
 {"level":30,"time":"2026-02-08T16:15:40.146Z","pid":26409,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
 {"level":30,"time":"2026-02-08T16:15:40.146Z","pid":26409,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T16:28:42.933Z","pid":46223,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T16:28:42.933Z","pid":46223,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T16:28:42.944Z","pid":46223,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:28:42.945Z","pid":46223,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T16:28:42.945Z","pid":46223,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T16:30:00.013Z","pid":46223,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:30:00.015Z","pid":46223,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","msg":"qBittorrent API request"}
+{"level":50,"time":"2026-02-08T16:31:15.018Z","pid":46223,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","err":{"type":"Error","message":"Unable to connect. Is the computer able to access the url?","stack":"","code":"ConnectionRefused","path":"http://192.168.2.33:8090/api/v2/auth/login","errno":0},"msg":"qBittorrent request failed"}
+{"level":50,"time":"2026-02-08T16:31:15.019Z","pid":46223,"hostname":"Matebook-Pro-X.local","err":{"type":"Error","message":"Unable to connect. Is the computer able to access the url?","stack":"","code":"ConnectionRefused","path":"http://192.168.2.33:8090/api/v2/auth/login","errno":0},"msg":"QBit connection validation failed"}
