@@ -6,6 +6,9 @@ export interface Config {
   core: {
     api_token: string;
   };
+  rss: {
+    eject_title_rules: string[];
+  };
   log: {
     dir: string;
     level: string;
@@ -55,6 +58,9 @@ function generateToken(): string {
 const DEFAULT_CONFIG: Config = {
   core: {
     api_token: "", // Will be generated if empty or missing
+  },
+  rss: {
+    eject_title_rules: ["720[Pp]", "合集", "特别篇"],
   },
   log: {
     // Defaults to `${process.cwd()}/log`.
@@ -110,6 +116,13 @@ export function loadConfig(): Config {
     // Merge with defaults to ensure all keys exist
     currentConfig = {
       core: { ...DEFAULT_CONFIG.core, ...parsed.core },
+      rss: {
+        ...DEFAULT_CONFIG.rss,
+        ...parsed.rss,
+        eject_title_rules: Array.isArray(parsed.rss?.eject_title_rules)
+          ? parsed.rss?.eject_title_rules || []
+          : DEFAULT_CONFIG.rss.eject_title_rules,
+      },
       log: { ...DEFAULT_CONFIG.log, ...parsed.log },
       qbittorrent: {
         ...DEFAULT_CONFIG.qbittorrent,
@@ -150,6 +163,8 @@ export function getConfigValue(key: string): string {
   const config = loadConfig();
   switch (key) {
     case "api_token": return config.core.api_token;
+    case "eject_title_rules":
+      return JSON.stringify(config.rss.eject_title_rules || []);
     case "log_dir": return config.log.dir;
     case "log_level": return config.log.level;
     case "qbit_url": return config.qbittorrent.url;
@@ -177,6 +192,19 @@ export function updateConfigValues(updates: Record<string, string>): void {
   for (const [key, value] of Object.entries(updates)) {
     switch (key) {
       case "api_token": config.core.api_token = value; break;
+      case "eject_title_rules":
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            config.rss.eject_title_rules = parsed
+              .filter((entry) => typeof entry === "string")
+              .map((entry) => entry.trim())
+              .filter(Boolean);
+          }
+        } catch {
+          // Ignore invalid JSON, keep existing rules
+        }
+        break;
       case "log_dir": config.log.dir = value; break;
       case "log_level": config.log.level = value; break;
       case "qbit_url": config.qbittorrent.url = value; break;

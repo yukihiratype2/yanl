@@ -5,6 +5,10 @@ import {
   updateSubscription,
   createTorrent,
   getProfileById,
+  getTorrentByEpisodeId,
+  getTorrentByHash,
+  getTorrentByLink,
+  getTorrentsBySubscription,
   Profile,
   Subscription,
   Episode,
@@ -56,12 +60,29 @@ async function tryDownloadEpisode(
   ep: Episode,
   profile: Profile | null
 ): Promise<boolean> {
+  if (getTorrentByEpisodeId(ep.id)) {
+    logger.info(
+      { subscription: sub.title, episode: ep.episode_number },
+      "Episode already has a torrent record"
+    );
+    return true;
+  }
+
   const searchResults = await rss.searchTorrents(sub.title, {
     season: sub.season_number,
     episode: ep.episode_number,
   });
 
   for (const item of searchResults) {
+    const hash = parseMagnetHash(item.link);
+    if ((hash && getTorrentByHash(hash)) || getTorrentByLink(item.link)) {
+      logger.info(
+        { subscription: sub.title, episode: ep.episode_number, result: item.title },
+        "Skipping already grabbed torrent"
+      );
+      return true;
+    }
+
     const parseResult = item.ai;
     if (!isTitleMatch(sub.title, parseResult)) continue;
     const episodeSeasonMatch = matchesEpisodeSeason(sub, ep, parseResult);
@@ -140,10 +161,27 @@ async function startEpisodeDownload(sub: Subscription, ep: Episode, item: rss.RS
 }
 
 async function searchMovieForSubscription(sub: Subscription) {
+  const existing = getTorrentsBySubscription(sub.id);
+  if (existing.some((t) => t.status === "downloading" || t.status === "completed")) {
+    logger.info(
+      { subscription: sub.title },
+      "Skipping movie search due to existing torrent record"
+    );
+    return;
+  }
+
   const searchResults = await rss.searchTorrents(sub.title);
   const profile = getProfileForSubscription(sub);
   for (const item of searchResults) {
     if (!isTitleMatch(sub.title, item.ai)) continue;
+    const hash = parseMagnetHash(item.link);
+    if ((hash && getTorrentByHash(hash)) || getTorrentByLink(item.link)) {
+      logger.info(
+        { subscription: sub.title, title: item.title },
+        "Skipping already grabbed movie torrent"
+      );
+      break;
+    }
     const profileMatch = matchesProfile(item, profile);
     if (!profileMatch.ok) {
       logger.debug(

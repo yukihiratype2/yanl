@@ -13,6 +13,7 @@ export function getAllSettings(): Record<string, string> {
   const config = loadConfig();
   return {
     api_token: config.core.api_token,
+    eject_title_rules: JSON.stringify(config.rss.eject_title_rules || []),
     log_dir: config.log.dir,
     log_level: config.log.level,
     qbit_url: config.qbittorrent.url,

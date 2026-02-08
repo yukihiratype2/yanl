@@ -36,3 +36,71 @@
 {"level":30,"time":"2026-02-08T15:20:00.100Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
 {"level":30,"time":"2026-02-08T15:20:00.101Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
 {"level":30,"time":"2026-02-08T15:20:00.109Z","pid":46690,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T15:46:54.524Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T15:46:54.524Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T15:46:54.535Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T15:46:54.536Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T15:46:54.536Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T15:50:00.014Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T15:50:00.015Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T15:50:00.099Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T15:50:00.099Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T15:50:00.110Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T16:00:00.022Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:00:00.023Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"searchAndDownload","msg":"Running job"}
+{"level":20,"time":"2026-02-08T16:00:00.024Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 01","url":"https://mikanani.me/RSS/Search?searchstr=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2001","msg":"Mikan RSS search query"}
+{"level":20,"time":"2026-02-08T16:00:00.024Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 01","url":"https://share.dmhy.org/topics/rss/rss.xml?keyword=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2001","msg":"DMHY RSS search query"}
+{"level":30,"time":"2026-02-08T16:00:00.025Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:00:00.025Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:00:00.044Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":20,"time":"2026-02-08T16:02:51.248Z","pid":88360,"hostname":"Matebook-Pro-X.local","subscription":"阿尔涅的事件簿","episode":1,"result":"【喵萌奶茶屋】★01月新番★[阿尔涅的事件簿 / 阿尔涅事件簿 / Arne no Jikenbo][04][1080p][繁日双语]","reason":"episode_miss","msg":"Episode/season filter rejected episode candidate"}
+{"level":20,"time":"2026-02-08T16:02:51.249Z","pid":88360,"hostname":"Matebook-Pro-X.local","subscription":"阿尔涅的事件簿","episode":1,"result":"【喵萌奶茶屋】★01月新番★[阿尔涅的事件簿 / 阿尔涅事件簿 / Arne no Jikenbo][05][1080p][简日双语]","reason":"episode_miss","msg":"Episode/season filter rejected episode candidate"}
+{"level":20,"time":"2026-02-08T16:02:51.249Z","pid":88360,"hostname":"Matebook-Pro-X.local","subscription":"阿尔涅的事件簿","episode":1,"result":"【喵萌奶茶屋】★01月新番★[阿尔涅的事件簿 / 阿尔涅事件簿 / Arne no Jikenbo][04][1080p][简日双语]","reason":"episode_miss","msg":"Episode/season filter rejected episode candidate"}
+{"level":30,"time":"2026-02-08T16:02:51.249Z","pid":88360,"hostname":"Matebook-Pro-X.local","subscription":"阿尔涅的事件簿","episode":1,"result":"[喵萌奶茶屋&LoliHouse] 阿尔涅的事件簿 / 阿尔涅事件簿 / Arne no Jikenbo - 01 [WebRip 1080p HEVC-10bit AAC][简繁日内封字幕]","msg":"Found RSS match"}
+{"level":30,"time":"2026-02-08T16:02:51.249Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/add","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:02:51.256Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/add","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":20,"time":"2026-02-08T16:02:51.256Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 02","url":"https://mikanani.me/RSS/Search?searchstr=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2002","msg":"Mikan RSS search query"}
+{"level":20,"time":"2026-02-08T16:02:51.256Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 02","url":"https://share.dmhy.org/topics/rss/rss.xml?keyword=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2002","msg":"DMHY RSS search query"}
+{"level":30,"time":"2026-02-08T16:04:40.691Z","pid":88360,"hostname":"Matebook-Pro-X.local","subscription":"阿尔涅的事件簿","episode":2,"result":"[云歌字幕组][阿尔涅的事件簿][02][HEVC][x265 10bit][1080p][简日双语]","msg":"Found RSS match"}
+{"level":30,"time":"2026-02-08T16:04:40.691Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/add","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:04:40.709Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/add","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":20,"time":"2026-02-08T16:04:40.710Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 03","url":"https://mikanani.me/RSS/Search?searchstr=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2003","msg":"Mikan RSS search query"}
+{"level":20,"time":"2026-02-08T16:04:40.710Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 03","url":"https://share.dmhy.org/topics/rss/rss.xml?keyword=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2003","msg":"DMHY RSS search query"}
+{"level":30,"time":"2026-02-08T16:05:00.012Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:05:00.012Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:05:00.030Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T16:06:42.510Z","pid":88360,"hostname":"Matebook-Pro-X.local","subscription":"阿尔涅的事件簿","episode":3,"result":"[云歌字幕组][阿尔涅的事件簿][03][HEVC][x265 10bit][1080p][简日双语]","msg":"Found RSS match"}
+{"level":30,"time":"2026-02-08T16:06:42.511Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/add","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:06:42.520Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/add","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":20,"time":"2026-02-08T16:06:42.521Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 04","url":"https://mikanani.me/RSS/Search?searchstr=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2004","msg":"Mikan RSS search query"}
+{"level":20,"time":"2026-02-08T16:06:42.521Z","pid":88360,"hostname":"Matebook-Pro-X.local","keyword":"阿尔涅的事件簿 04","url":"https://share.dmhy.org/topics/rss/rss.xml?keyword=%E9%98%BF%E5%B0%94%E6%B6%85%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B0%BF%2004","msg":"DMHY RSS search query"}
+{"level":30,"time":"2026-02-08T16:07:28.515Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T16:07:28.516Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T16:07:28.529Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:07:28.529Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T16:07:28.529Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T16:10:00.015Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:10:00.017Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:10:00.118Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T16:10:00.118Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:10:00.128Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T16:11:30.285Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T16:11:30.286Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T16:11:30.299Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:11:30.299Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T16:11:30.299Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T16:11:48.944Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T16:11:48.944Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T16:11:48.957Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:11:48.958Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T16:11:48.958Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T16:12:11.063Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Database initialized successfully"}
+{"level":30,"time":"2026-02-08T16:12:11.064Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"Starting background monitor..."}
+{"level":30,"time":"2026-02-08T16:12:11.076Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"checkNewEpisodes","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:12:11.077Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"NAS Tools Backend running on http://localhost:3001"}
+{"level":30,"time":"2026-02-08T16:12:11.077Z","pid":88360,"hostname":"Matebook-Pro-X.local","msg":"API Token: ZBa3vvwvbrQD9DELErhtTqkCARaBMlXz"}
+{"level":30,"time":"2026-02-08T16:15:00.008Z","pid":88360,"hostname":"Matebook-Pro-X.local","job":"monitorDownloads","msg":"Running job"}
+{"level":30,"time":"2026-02-08T16:15:00.009Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:15:00.089Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/auth/login","method":"POST","status":200,"msg":"qBittorrent API response"}
+{"level":30,"time":"2026-02-08T16:15:00.090Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","msg":"qBittorrent API request"}
+{"level":30,"time":"2026-02-08T16:15:00.101Z","pid":88360,"hostname":"Matebook-Pro-X.local","path":"/api/v2/torrents/info?tag=nas-tools","method":"GET","status":200,"msg":"qBittorrent API response"}

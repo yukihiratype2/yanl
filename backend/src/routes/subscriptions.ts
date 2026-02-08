@@ -218,8 +218,14 @@ subscriptionRoutes.patch("/:id", async (c) => {
   const sub = getSubscriptionById(id);
   if (!sub) return c.json({ error: "Subscription not found" }, 404);
 
-  const body = await c.req.json<Partial<{ status: string }>>();
-  updateSubscription(id, body);
+  const body = await c.req.json<{ status?: "active" | "disabled" }>();
+  if (!body.status) {
+    return c.json({ error: "Missing status" }, 400);
+  }
+  if (!["active", "disabled"].includes(body.status)) {
+    return c.json({ error: "Invalid status" }, 400);
+  }
+  updateSubscription(id, { status: body.status });
   return c.json({ success: true });
 });
 

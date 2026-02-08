@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { parseTorrentTitles, type AITitleParse } from "./ai";
+import { getSetting } from "../db/settings";
 import { logger } from "./logger";
 
 export interface RSSItem {
@@ -164,13 +165,57 @@ export async function searchTorrents(
     fetchDmhyRSS(query),
   ]);
   const results = [...mikanResults, ...dmhyResults];
-  const titles = results.map((item) => item.title);
+  const filteredResults = applyEjectTitleRules(results);
+  const titles = filteredResults.map((item) => item.title);
   const aiParsed = await parseTorrentTitles(titles);
   if (aiParsed && aiParsed.length > 0) {
-    return results.map((item, index) => ({
+    return filteredResults.map((item, index) => ({
       ...item,
       ai: aiParsed[index] || undefined,
     }));
   }
-  return results;
+  return filteredResults;
+}
+
+function loadEjectTitleRules(): string[] {
+  const raw = getSetting("eject_title_rules");
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((rule) => typeof rule === "string");
+  } catch {
+    return [];
+  }
+}
+
+function applyEjectTitleRules(items: RSSItem[]): RSSItem[] {
+  const rules = loadEjectTitleRules();
+  if (rules.length === 0) return items;
+
+  const matchers = rules
+    .map((rule) => {
+      try {
+        return { rule, regex: new RegExp(rule) };
+      } catch (error) {
+        logger.warn({ rule, err: error }, "Invalid eject title rule");
+        return null;
+      }
+    })
+    .filter((entry): entry is { rule: string; regex: RegExp } => Boolean(entry));
+
+  if (matchers.length === 0) return items;
+
+  return items.filter((item) => {
+    for (const matcher of matchers) {
+      if (matcher.regex.test(item.title)) {
+        logger.info(
+          { title: item.title, rule: matcher.rule, source: item.source },
+          "RSS title ejected by rule"
+        );
+        return false;
+      }
+    }
+    return true;
+  });
 }

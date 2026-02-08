@@ -7,7 +7,15 @@ import {
   resumeTorrents,
   deleteTorrents,
 } from "../services/qbittorrent";
-import { createTorrent, getSubscriptionById, updateEpisode } from "../db/models";
+import {
+  createTorrent,
+  getSubscriptionById,
+  updateEpisode,
+  getTorrentByEpisodeId,
+  getTorrentByHash,
+  getTorrentByLink,
+} from "../db/models";
+import { parseMagnetHash } from "../services/monitor/utils";
 
 const torrentRoutes = new Hono();
 
@@ -44,6 +52,14 @@ torrentRoutes.post("/download", async (c) => {
   }
 
   try {
+    const hash = parseMagnetHash(body.link);
+    if ((hash && getTorrentByHash(hash)) || getTorrentByLink(body.link)) {
+      return c.json({ error: "Torrent already added" }, 409);
+    }
+    if (body.episode_id && getTorrentByEpisodeId(body.episode_id)) {
+      return c.json({ error: "Episode already has a torrent" }, 409);
+    }
+
     const savepath = getQbitDownloadDir(sub.media_type);
     const success = await addTorrentByUrl(body.link, {
       savepath,
@@ -54,10 +70,6 @@ torrentRoutes.post("/download", async (c) => {
     }
 
     if (body.episode_id) {
-      let hash: string | null = null;
-      if (body.link.startsWith("magnet:?xt=urn:btih:")) {
-        hash = body.link.split("xt=urn:btih:")[1].split("&")[0].toLowerCase();
-      }
       updateEpisode(body.episode_id, { status: "downloading", torrent_hash: hash });
     }
 
@@ -66,7 +78,7 @@ torrentRoutes.post("/download", async (c) => {
       episode_id: body.episode_id || null,
       title: body.title,
       link: body.link,
-      hash: null,
+      hash,
       size: null,
       source: body.source,
       status: "downloading",

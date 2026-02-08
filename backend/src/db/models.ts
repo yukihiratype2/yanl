@@ -223,6 +223,26 @@ export function getTorrentsBySubscription(subscriptionId: number): Torrent[] {
     .all(subscriptionId) as Torrent[];
 }
 
+export function getTorrentByHash(hash: string): Torrent | undefined {
+  return db
+    .prepare("SELECT * FROM torrents WHERE hash = ? LIMIT 1")
+    .get(hash) as Torrent | undefined;
+}
+
+export function getTorrentByLink(link: string): Torrent | undefined {
+  return db
+    .prepare("SELECT * FROM torrents WHERE link = ? LIMIT 1")
+    .get(link) as Torrent | undefined;
+}
+
+export function getTorrentByEpisodeId(episodeId: number): Torrent | undefined {
+  return db
+    .prepare(
+      "SELECT * FROM torrents WHERE episode_id = ? ORDER BY created_at DESC LIMIT 1"
+    )
+    .get(episodeId) as Torrent | undefined;
+}
+
 export function createTorrent(
   t: Omit<Torrent, "id" | "created_at" | "updated_at">
 ): Torrent {
