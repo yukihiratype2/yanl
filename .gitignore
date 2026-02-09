@@ -5,3 +5,6 @@ backend/data/
 .env.local
 *.db
 backend/log/
+data/*
+!data/config.example.yaml
+frontend/.env.local

@@ -1,0 +1,19 @@
+core:
+  api_token: "CHANGE_ME"
+log:
+  dir: /path/to/nas-tools/backend/log
+  level: debug
+qbittorrent:
+  url: http://127.0.0.1:8080
+  username: admin
+  password: "CHANGE_ME"
+tmdb:
+  token: "CHANGE_ME"
+media_dirs:
+  anime: /path/to/media/anime
+  tv: /path/to/media/tv
+  movie: /path/to/media/movie
+ai:
+  api_url: https://api.example.com/v1
+  api_token: "CHANGE_ME"
+  model: glm-4.7

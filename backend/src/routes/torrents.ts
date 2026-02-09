@@ -1,21 +1,11 @@
 import { Hono } from "hono";
 import { searchTorrents } from "../services/rss";
 import {
-  addTorrentByUrl,
-  getQbitDownloadDir,
   pauseTorrents,
   resumeTorrents,
   deleteTorrents,
 } from "../services/qbittorrent";
-import {
-  createTorrent,
-  getSubscriptionById,
-  updateEpisode,
-  getTorrentByEpisodeId,
-  getTorrentByHash,
-  getTorrentByLink,
-} from "../db/models";
-import { parseMagnetHash } from "../services/monitor/utils";
+import { downloadTorrent } from "../usecases/torrents";
 
 const torrentRoutes = new Hono();
 
@@ -45,50 +35,11 @@ torrentRoutes.post("/download", async (c) => {
     link: string;
     source: string;
   }>();
-
-  const sub = getSubscriptionById(body.subscription_id);
-  if (!sub) {
-    return c.json({ error: "Subscription not found" }, 404);
+  const result = await downloadTorrent(body);
+  if (!result.ok) {
+    return c.json({ error: result.error }, result.status);
   }
-
-  try {
-    const hash = parseMagnetHash(body.link);
-    if ((hash && getTorrentByHash(hash)) || getTorrentByLink(body.link)) {
-      return c.json({ error: "Torrent already added" }, 409);
-    }
-    if (body.episode_id && getTorrentByEpisodeId(body.episode_id)) {
-      return c.json({ error: "Episode already has a torrent" }, 409);
-    }
-
-    const savepath = getQbitDownloadDir(sub.media_type);
-    const success = await addTorrentByUrl(body.link, {
-      savepath,
-      category: sub.media_type,
-    });
-    if (!success) {
-      return c.json({ error: "Failed to add torrent to qBittorrent" }, 500);
-    }
-
-    if (body.episode_id) {
-      updateEpisode(body.episode_id, { status: "downloading", torrent_hash: hash });
-    }
-
-    const torrent = createTorrent({
-      subscription_id: body.subscription_id,
-      episode_id: body.episode_id || null,
-      title: body.title,
-      link: body.link,
-      hash,
-      size: null,
-      source: body.source,
-      status: "downloading",
-      download_path: sub.folder_path,
-    });
-
-    return c.json(torrent, 201);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
+  return c.json(result.data, 201);
 });
 
 // Pause torrents

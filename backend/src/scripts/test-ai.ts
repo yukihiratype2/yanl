@@ -15,8 +15,7 @@ const defaultTitles = [
   "[ANi] Chained Soldier S02 / 魔都精兵的奴隸 第二季 - 05 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]"
 ];
 
-async function main() {
-  const args = process.argv.slice(2);
+export async function runAITest(args: string[] = process.argv.slice(2)) {
   const titles = args.length > 0 ? args : defaultTitles;
 
   logger.info({ count: titles.length }, "AI test start");
@@ -31,7 +30,9 @@ async function main() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-main().catch((err) => {
-  logger.error({ err }, "AI test crashed");
-  process.exitCode = 1;
-});
+if (import.meta.main) {
+  runAITest().catch((err) => {
+    logger.error({ err }, "AI test crashed");
+    process.exitCode = 1;
+  });
+}

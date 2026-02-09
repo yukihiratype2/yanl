@@ -6,8 +6,9 @@ import { logger } from "../services/logger";
 const dataDir = join(import.meta.dir, "..", "..", "data");
 mkdirSync(dataDir, { recursive: true });
 const DB_PATH = join(dataDir, "nas-tools.db");
+const DB_PATH_OVERRIDE = process.env.NAS_TOOLS_DB_PATH;
 
-const db = new Database(DB_PATH, { create: true });
+const db = new Database(DB_PATH_OVERRIDE || DB_PATH, { create: true });
 
 // Enable WAL mode for better performance
 db.run("PRAGMA journal_mode = WAL");

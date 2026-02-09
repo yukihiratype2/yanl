@@ -1,6 +1,7 @@
 {
   "chat.tools.terminal.autoApprove": {
     "bun": true,
-    "bunx": true
+    "bunx": true,
+    "git remote": true
   }
 }
