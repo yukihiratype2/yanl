@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { modulePath } from "./mockPath";
 
 const created: any[] = [];
@@ -49,7 +49,20 @@ const tmdbMock = () => ({
   getSeasonDetail: async () => ({
     season_number: 1,
     episodes: [
-      { episode_number: 1, name: "Ep1", air_date: "2024-01-01", overview: "", still_path: null },
+      {
+        episode_number: 1,
+        name: "Ep1",
+        air_date: "2024-01-01",
+        overview: "",
+        still_path: null,
+      },
+      {
+        episode_number: 2,
+        name: "Ep2",
+        air_date: "2024-02-01",
+        overview: "",
+        still_path: null,
+      },
     ],
   }),
   getTVDetail: async () => ({
@@ -64,6 +77,7 @@ mock.module("../tmdb", tmdbMock);
 const bgmMock = () => ({
   getAllEpisodes: async () => [
     { ep: 1, sort: 1, airdate: "2024-01-01", name_cn: "Ep1", name: "Ep1" },
+    { ep: 2, sort: 2, airdate: "2024-02-01", name_cn: "Ep2", name: "Ep2" },
   ],
 });
 mock.module(modulePath("../src/services/bgm"), bgmMock);
@@ -88,8 +102,18 @@ mock.module("./utils", utilsMock);
 const discovery = await import("../src/services/monitor/discovery?test=monitor-discovery");
 
 describe("monitor/discovery", () => {
+  beforeEach(() => {
+    created.length = 0;
+  });
+
   it("creates new episodes from TMDB and BGM", async () => {
     await discovery.checkNewEpisodes();
-    expect(created.length).toBeGreaterThanOrEqual(0);
+    expect(created).toHaveLength(2);
+  });
+
+  it("filters out episodes with future airdates", async () => {
+    await discovery.checkNewEpisodes();
+    const futureEpisodes = created.filter((episode) => episode.air_date === "2024-02-01");
+    expect(futureEpisodes).toHaveLength(0);
   });
 });
