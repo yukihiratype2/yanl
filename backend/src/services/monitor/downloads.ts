@@ -14,7 +14,7 @@ import {
   Episode,
 } from "../../db/models";
 import * as rss from "../rss";
-import * as qbittorrent from "../qbittorrent";
+import { qbittorrent } from "../qbittorrent";
 import { logger } from "../logger";
 import { getTodayDateOnly, parseMagnetHash } from "./utils";
 import { isTitleMatch, matchesEpisodeSeason, matchesProfile } from "./matchers";

@@ -43,7 +43,9 @@ export interface Config {
   };
 }
 
-const CONFIG_PATH = join(import.meta.dir, "..", "..", "data", "config.yaml");
+const CONFIG_PATH =
+  process.env.NAS_TOOLS_CONFIG_PATH ||
+  join(import.meta.dir, "..", "..", "data", "config.yaml");
 
 function generateToken(): string {
   const chars =

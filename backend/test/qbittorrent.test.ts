@@ -25,7 +25,10 @@ mock.module(modulePath("../src/db/settings"), settingsMock);
 mock.module("../db/settings", settingsMock);
 
 async function loadQb() {
-  return import(`../src/services/qbittorrent?test=qbittorrent-${Date.now()}-${Math.random()}`);
+  const module = await import(
+    `../src/services/qbittorrent?test=qbittorrent-${Date.now()}-${Math.random()}`
+  );
+  return module.qbittorrent;
 }
 
 describe("services/qbittorrent", () => {

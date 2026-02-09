@@ -1,4 +1,4 @@
-import * as qbittorrent from "../services/qbittorrent";
+import { qbittorrent, type QbittorrentService } from "../services/qbittorrent";
 import * as models from "../db/models";
 import { parseMagnetHash } from "../services/monitor/utils";
 import { err, ok, type Result } from "../lib/result";
@@ -12,7 +12,7 @@ export type DownloadTorrentInput = {
 };
 
 export type TorrentDeps = {
-  qbittorrent: typeof qbittorrent;
+  qbittorrent: QbittorrentService;
   models: typeof models;
 };
 

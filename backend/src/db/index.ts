@@ -309,6 +309,8 @@ export function initDatabase() {
     ensureColumn("subscriptions", "source_id", "source_id INTEGER");
   }
 
-  backfillMediaDateColumns();
+  if (process.env.NAS_TOOLS_SKIP_DATE_BACKFILL !== "1") {
+    backfillMediaDateColumns();
+  }
   logger.info("Database initialized successfully");
 }

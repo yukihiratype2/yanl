@@ -6,7 +6,7 @@ import {
   readdirSync,
   statSync,
   rmSync,
-} from "fs";
+} from "node:fs";
 import { join, basename, extname, resolve, sep } from "path";
 import { getSetting } from "../db/settings";
 
@@ -62,8 +62,18 @@ export function moveFileToMediaDir(
     // Try rename first (same filesystem, instant)
     renameSync(sourcePath, destPath);
   } catch {
+    if (!existsSync(sourcePath) && existsSync(destPath)) {
+      return destPath;
+    }
     // Fall back to copy if cross-filesystem
-    copyFileSync(sourcePath, destPath);
+    try {
+      copyFileSync(sourcePath, destPath);
+    } catch (err) {
+      if (!existsSync(sourcePath) && existsSync(destPath)) {
+        return destPath;
+      }
+      throw err;
+    }
     // Optionally delete source after copy
   }
 
@@ -75,7 +85,12 @@ export function findVideoFiles(dirPath: string): string[] {
 
   if (!existsSync(dirPath)) return results;
 
-  const stat = statSync(dirPath);
+  let stat;
+  try {
+    stat = statSync(dirPath);
+  } catch {
+    return results;
+  }
   if (stat.isFile()) {
     if (VIDEO_EXTENSIONS.has(extname(dirPath).toLowerCase())) {
       results.push(dirPath);

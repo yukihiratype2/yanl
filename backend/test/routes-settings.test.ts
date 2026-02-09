@@ -20,6 +20,7 @@ const aiMock = () => ({
     if (aiShouldThrow) throw new Error("ai failed");
     return "ok";
   },
+  parseTorrentTitles: async () => [{ englishTitle: "Mocked" }],
 });
 mock.module(modulePath("../src/services/ai"), aiMock);
 mock.module("../services/ai", aiMock);
@@ -37,15 +38,17 @@ mock.module("../services/logger", loggerMock);
 
 let qbitTestResponse: any = { ok: true };
 const qbitMock = () => ({
-  testConnection: async () => qbitTestResponse,
-  mapQbitPathToLocal: (path: string) => path,
-  getTorrents: async () => [],
-  deleteTorrents: async () => true,
-  getManagedQbitTags: () => new Set<string>(),
-  getManagedQbitTorrents: async () => [],
-  hasManagedQbitTag: () => false,
-  isDownloadComplete: () => false,
-  cleanupQbitTorrent: async () => {},
+  qbittorrent: {
+    testConnection: async () => qbitTestResponse,
+    mapQbitPathToLocal: (path: string) => path,
+    getTorrents: async () => [],
+    deleteTorrents: async () => true,
+    getManagedQbitTags: () => new Set<string>(),
+    getManagedQbitTorrents: async () => [],
+    hasManagedQbitTag: () => false,
+    isDownloadComplete: () => false,
+    cleanupQbitTorrent: async () => {},
+  },
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);
 mock.module("../services/qbittorrent", qbitMock);

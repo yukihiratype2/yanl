@@ -55,13 +55,15 @@ mock.module(modulePath("../src/services/rss"), rssMock);
 mock.module("../rss", rssMock);
 
 const qbitMock = () => ({
-  getQbitDownloadDir: () => "/downloads",
-  addTorrentByUrl: async () => true,
-  getManagedQbitTags: () => new Set<string>(),
-  getManagedQbitTorrents: async () => [],
-  hasManagedQbitTag: () => false,
-  isDownloadComplete: () => false,
-  cleanupQbitTorrent: async () => {},
+  qbittorrent: {
+    getQbitDownloadDir: () => "/downloads",
+    addTorrentByUrl: async () => true,
+    getManagedQbitTags: () => new Set<string>(),
+    getManagedQbitTorrents: async () => [],
+    hasManagedQbitTag: () => false,
+    isDownloadComplete: () => false,
+    cleanupQbitTorrent: async () => {},
+  },
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);
 mock.module("../qbittorrent", qbitMock);
@@ -77,25 +79,6 @@ const loggerMock = () => ({
 });
 mock.module(modulePath("../src/services/logger"), loggerMock);
 mock.module("../logger", loggerMock);
-
-const matchersMock = () => ({
-  isTitleMatch: () => true,
-  matchesEpisodeSeason: () => ({ ok: true }),
-  matchesProfile: () => ({ ok: true }),
-});
-mock.module(modulePath("../src/services/monitor/matchers"), matchersMock);
-mock.module("./matchers", matchersMock);
-
-const utilsMock = () => ({
-  getTodayDateOnly: () => "2024-01-02",
-  parseMagnetHash: (link: string) => {
-    if (!link.startsWith("magnet:?xt=urn:btih:")) return null;
-    const hash = link.split("xt=urn:btih:")[1]?.split("&")[0];
-    return hash ? hash.toLowerCase() : null;
-  },
-});
-mock.module(modulePath("../src/services/monitor/utils"), utilsMock);
-mock.module("./utils", utilsMock);
 
 const downloads = await import("../src/services/monitor/downloads?test=monitor-downloads");
 

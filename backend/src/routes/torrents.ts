@@ -1,10 +1,6 @@
 import { Context, Hono } from "hono";
 import { searchTorrents } from "../services/rss";
-import {
-  pauseTorrents,
-  resumeTorrents,
-  deleteTorrents,
-} from "../services/qbittorrent";
+import { qbittorrent } from "../services/qbittorrent";
 import { downloadTorrent } from "../usecases/torrents";
 
 const torrentRoutes = new Hono();
@@ -104,7 +100,7 @@ torrentRoutes.post("/pause", async (c) => {
     return c.json({ error: "Missing hashes" }, 400);
   }
   try {
-    const success = await pauseTorrents(bodyOrResponse.hashes);
+    const success = await qbittorrent.pauseTorrents(bodyOrResponse.hashes);
     return c.json({ success });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -121,7 +117,7 @@ torrentRoutes.post("/resume", async (c) => {
     return c.json({ error: "Missing hashes" }, 400);
   }
   try {
-    const success = await resumeTorrents(bodyOrResponse.hashes);
+    const success = await qbittorrent.resumeTorrents(bodyOrResponse.hashes);
     return c.json({ success });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -144,7 +140,7 @@ torrentRoutes.post("/delete", async (c) => {
     return c.json({ error: "Invalid deleteFiles value" }, 400);
   }
   try {
-    const success = await deleteTorrents(
+    const success = await qbittorrent.deleteTorrents(
       bodyOrResponse.hashes,
       bodyOrResponse.deleteFiles || false
     );
