@@ -10,6 +10,7 @@ import {
   Play,
 } from "lucide-react";
 import type { JobStatus } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { Section } from "./Section";
 
 type Props = {
@@ -27,14 +28,16 @@ export default function JobsSection({ jobs, loading, onRefresh, onRunJob, runnin
         <p className="text-xs text-muted-foreground">
           Scheduled tasks that run automatically in the background.
         </p>
-        <button
+        <Button
           onClick={onRefresh}
           disabled={loading}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
           Refresh
-        </button>
+        </Button>
       </div>
       {loading && jobs.length === 0 ? (
         <div className="flex items-center justify-center py-6">
@@ -153,15 +156,16 @@ function JobCard({
           )}
         </div>
 
-        <button
+        <Button
           onClick={onRun}
           disabled={isRunning}
           title="Run now"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
+          size="sm"
+          className="h-8 gap-1.5 text-xs shrink-0"
         >
           {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
           Run Now
-        </button>
+        </Button>
       </div>
     </div>
   );

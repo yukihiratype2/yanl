@@ -1,6 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 type SectionProps = {
   title: string;
@@ -16,20 +23,22 @@ type FieldProps = {
 
 export function Section({ title, icon, children }: SectionProps) {
   return (
-    <div className="bg-card rounded-xl border border-border p-5">
-      <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-        {icon}
-        {title}
-      </h2>
-      <div className="space-y-4">{children}</div>
-    </div>
+    <Card className="py-0">
+      <CardHeader className="gap-0 border-b py-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          {icon}
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 py-5">{children}</CardContent>
+    </Card>
   );
 }
 
 export function Field({ label, sublabel, children }: FieldProps) {
   return (
     <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
+      <Label className="mb-1">{label}</Label>
       {sublabel && <p className="text-xs text-muted-foreground mb-2">{sublabel}</p>}
       {children}
     </div>

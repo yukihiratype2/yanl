@@ -10,6 +10,7 @@ import {
 import * as fileManager from "../fileManager";
 import { logger } from "../logger";
 import { qbittorrent } from "../qbittorrent";
+import { emitNotifactionEvent } from "../notifaction";
 import {
   buildEpisodeFilename,
   buildMovieFilename,
@@ -73,6 +74,24 @@ async function handleDownloadingEpisode(
   if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
   logger.info({ subscription: sub.title, episode: ep.title }, "Episode download complete");
+  emitNotifactionEvent({
+    type: "download_completed",
+    subscription: {
+      id: sub.id,
+      title: sub.title,
+      media_type: sub.media_type,
+      source: sub.source,
+      source_id: sub.source_id,
+      season_number: sub.season_number,
+    },
+    data: {
+      episode_id: ep.id,
+      episode_number: ep.episode_number,
+      episode_title: ep.title,
+      torrent_hash: ep.torrent_hash,
+      content_path: torrent.content_path,
+    },
+  });
 
   const contentPath = qbittorrent.mapQbitPathToLocal(torrent.content_path);
   let sourceFile = selectPrimaryVideoFile(contentPath);
@@ -92,6 +111,24 @@ async function handleDownloadingEpisode(
     updateEpisode(ep.id, {
       status: "completed",
       file_path: finalPath,
+    });
+    emitNotifactionEvent({
+      type: "media_moved",
+      subscription: {
+        id: sub.id,
+        title: sub.title,
+        media_type: sub.media_type,
+        source: sub.source,
+        source_id: sub.source_id,
+        season_number: sub.season_number,
+      },
+      data: {
+        episode_id: ep.id,
+        episode_number: ep.episode_number,
+        episode_title: ep.title,
+        from_path: sourceFile,
+        to_path: finalPath,
+      },
     });
 
     await qbittorrent.cleanupQbitTorrent(torrent, managedTags, {
@@ -151,6 +188,21 @@ async function handleDownloadingMovie(
   if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
   logger.info({ subscription: sub.title }, "Movie download complete");
+  emitNotifactionEvent({
+    type: "download_completed",
+    subscription: {
+      id: sub.id,
+      title: sub.title,
+      media_type: sub.media_type,
+      source: sub.source,
+      source_id: sub.source_id,
+      season_number: sub.season_number,
+    },
+    data: {
+      torrent_hash: activeTorrentRecord.hash,
+      content_path: torrent.content_path,
+    },
+  });
 
   const contentPath = qbittorrent.mapQbitPathToLocal(torrent.content_path);
   let sourceFile = selectPrimaryVideoFile(contentPath);
@@ -159,9 +211,24 @@ async function handleDownloadingMovie(
     const destDir = fileManager.createMediaFolder("movie", sub.title);
     const newName = buildMovieFilename(sub.title, sourceFile);
 
-    fileManager.moveFileToMediaDir(sourceFile, destDir, newName);
+    const finalPath = fileManager.moveFileToMediaDir(sourceFile, destDir, newName);
 
     updateSubscription(sub.id, { status: "completed" });
+    emitNotifactionEvent({
+      type: "media_moved",
+      subscription: {
+        id: sub.id,
+        title: sub.title,
+        media_type: sub.media_type,
+        source: sub.source,
+        source_id: sub.source_id,
+        season_number: sub.season_number,
+      },
+      data: {
+        from_path: sourceFile,
+        to_path: finalPath,
+      },
+    });
     await qbittorrent.cleanupQbitTorrent(torrent, managedTags, {
       subscription: sub.title,
     });

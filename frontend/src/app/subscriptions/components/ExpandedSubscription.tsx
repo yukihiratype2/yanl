@@ -9,6 +9,9 @@ import {
   type RSSItem,
   type Subscription,
 } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/errors";
 
 type ExpandedSubscriptionProps = {
@@ -173,20 +176,22 @@ export default function ExpandedSubscription({
                       <span className="truncate">
                         {ep.title || `Episode ${ep.episode_number}`}
                       </span>
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      <Badge
+                        variant="secondary"
+                        className={`h-5 border-transparent text-[10px] ${
                           release.released
                             ? "bg-success/20 text-success"
                             : "bg-muted/20 text-muted-foreground"
                         }`}
                       >
                         {release.status}
-                      </span>
+                      </Badge>
                     </div>
                     {fileStatus && (
                       <div className="mt-1">
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        <Badge
+                          variant="secondary"
+                          className={`h-5 border-transparent text-[10px] ${
                             fileStatus.tone === "success"
                               ? "bg-success/20 text-success"
                               : fileStatus.tone === "warning"
@@ -195,18 +200,19 @@ export default function ExpandedSubscription({
                           }`}
                         >
                           {fileStatus.label}
-                        </span>
+                        </Badge>
                       </div>
                     )}
                   </div>
                   {canSearch && (
-                    <button
+                    <Button
                       onClick={() => openEpisodeSearch(ep)}
-                      className="p-1.5 rounded-md border border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
+                      variant="outline"
+                      size="icon-sm"
                       title="Search torrents for this episode"
                     >
                       <Search className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               );
@@ -232,20 +238,21 @@ export default function ExpandedSubscription({
                   {episodeSearchTarget.title || "Episode"}
                 </p>
               </div>
-              <button
+              <Button
                 onClick={() => {
                   setEpisodeSearchOpen(false);
                   setEpisodeSearchTarget(null);
                 }}
-                className="p-1 hover:bg-secondary rounded-lg"
+                variant="ghost"
+                size="icon-sm"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 border-b border-border">
               <div className="flex gap-2">
-                <input
+                <Input
                   type="text"
                   value={episodeSearchQuery}
                   onChange={(e) => setEpisodeSearchQuery(e.target.value)}
@@ -253,12 +260,11 @@ export default function ExpandedSubscription({
                     e.key === "Enter" && runEpisodeSearch(e.currentTarget.value)
                   }
                   placeholder={sub.title}
-                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1"
                 />
-                <button
+                <Button
                   onClick={() => runEpisodeSearch(episodeSearchQuery || sub.title)}
                   disabled={episodeSearchLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
                 >
                   {episodeSearchLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -266,7 +272,7 @@ export default function ExpandedSubscription({
                     <Search className="w-4 h-4" />
                   )}
                   Search
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -283,16 +289,18 @@ export default function ExpandedSubscription({
                     key={i}
                     className="flex items-center gap-2 p-2 bg-background rounded-lg text-sm group"
                   >
-                    <span className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent rounded">
+                    <Badge variant="secondary" className="h-5 border-transparent text-[10px]">
                       {item.source}
-                    </span>
+                    </Badge>
                     <span className="flex-1 truncate text-xs" title={item.title}>
                       {item.title}
                     </span>
-                    <button
+                    <Button
                       onClick={() => handleEpisodeDownload(item)}
                       disabled={episodeDownloading === item.link}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-primary/20 text-primary rounded transition-all disabled:opacity-50"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="opacity-0 group-hover:opacity-100 transition-all"
                       title="Download"
                     >
                       {episodeDownloading === item.link ? (
@@ -300,7 +308,7 @@ export default function ExpandedSubscription({
                       ) : (
                         <Download className="w-4 h-4" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 ))
               )}

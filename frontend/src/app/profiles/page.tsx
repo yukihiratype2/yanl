@@ -24,6 +24,11 @@ import {
   type Profile,
   type ProfileInput,
 } from "@/lib/api";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/errors";
 
 const RESOLUTION_OPTIONS = ["2160p", "1080p", "720p", "480p"];
@@ -91,22 +96,25 @@ function TagInput({
     <div>
       <div className="flex flex-wrap gap-1.5 mb-1.5">
         {value.map((tag) => (
-          <span
+          <Badge
             key={tag}
-            className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-md"
+            variant="secondary"
+            className="h-6 border-transparent bg-primary/10 text-primary text-xs"
           >
             {tag}
-            <button
+            <Button
               type="button"
               onClick={() => onChange(value.filter((t) => t !== tag))}
-              className="hover:text-destructive"
+              variant="ghost"
+              size="icon-xs"
+              className="h-4 w-4 text-current hover:text-destructive"
             >
               <X className="w-3 h-3" />
-            </button>
-          </span>
+            </Button>
+          </Badge>
         ))}
       </div>
-      <input
+      <Input
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -118,7 +126,7 @@ function TagInput({
         }}
         onBlur={addTag}
         placeholder={placeholder}
-        className="w-full px-3 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+        className="h-8 bg-secondary"
       />
     </div>
   );
@@ -144,18 +152,16 @@ function MultiSelect({
   return (
     <div className="flex flex-wrap gap-1.5">
       {options.map((opt) => (
-        <button
+        <Button
           key={opt}
           type="button"
           onClick={() => toggle(opt)}
-          className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
-            value.includes(opt)
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
-          }`}
+          variant={value.includes(opt) ? "default" : "secondary"}
+          size="xs"
+          className={value.includes(opt) ? "" : "text-muted-foreground"}
         >
           {opt}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -269,13 +275,12 @@ export default function ProfilesPage() {
           <SlidersHorizontal className="w-7 h-7 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Profiles</h1>
         </div>
-        <button
+        <Button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
         >
           <Plus className="w-4 h-4" />
           New Profile
-        </button>
+        </Button>
       </div>
 
       <p className="text-muted-foreground text-sm">
@@ -284,9 +289,9 @@ export default function ProfilesPage() {
       </p>
 
       {error && !showForm && (
-        <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Form Modal */}
@@ -297,18 +302,19 @@ export default function ProfilesPage() {
               <h2 className="text-lg font-semibold text-foreground">
                 {editingId ? "Edit Profile" : "Create Profile"}
               </h2>
-              <button
+              <Button
                 onClick={closeForm}
-                className="text-muted-foreground hover:text-foreground"
+                variant="ghost"
+                size="icon-sm"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
             <div className="p-5 space-y-5">
               {error && (
-                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
 
               {/* Name */}
@@ -316,12 +322,12 @@ export default function ProfilesPage() {
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Name *
                 </label>
-                <input
+                <Input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g. HD Quality, 4K Remux"
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="bg-secondary"
                 />
               </div>
 
@@ -330,14 +336,14 @@ export default function ProfilesPage() {
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Description
                 </label>
-                <textarea
+                <Textarea
                   value={form.description || ""}
                   onChange={(e) =>
                     setForm({ ...form, description: e.target.value })
                   }
                   placeholder="Optional description of this profile"
                   rows={2}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                  className="resize-none bg-secondary"
                 />
               </div>
 
@@ -403,7 +409,7 @@ export default function ProfilesPage() {
                     <label className="block text-xs text-muted-foreground mb-1">
                       Minimum
                     </label>
-                    <input
+                    <Input
                       type="number"
                       value={form.min_size_mb ?? ""}
                       onChange={(e) =>
@@ -415,14 +421,14 @@ export default function ProfilesPage() {
                         })
                       }
                       placeholder="No minimum"
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="bg-secondary"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">
                       Maximum
                     </label>
-                    <input
+                    <Input
                       type="number"
                       value={form.max_size_mb ?? ""}
                       onChange={(e) =>
@@ -434,7 +440,7 @@ export default function ProfilesPage() {
                         })
                       }
                       placeholder="No maximum"
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="bg-secondary"
                     />
                   </div>
                 </div>
@@ -479,16 +485,15 @@ export default function ProfilesPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 p-5 border-t border-border">
-              <button
+              <Button
                 onClick={closeForm}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                variant="ghost"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -496,7 +501,7 @@ export default function ProfilesPage() {
                   <Save className="w-4 h-4" />
                 )}
                 {editingId ? "Update" : "Create"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -512,13 +517,12 @@ export default function ProfilesPage() {
           <p className="text-sm text-muted-foreground mb-4">
             Create a profile to define quality constraints for your downloads.
           </p>
-          <button
+          <Button
             onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             Create Profile
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -534,9 +538,12 @@ export default function ProfilesPage() {
                       {profile.name}
                     </h3>
                     {profile.is_default === 1 && (
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-primary/15 text-primary">
+                      <Badge
+                        variant="secondary"
+                        className="h-5 border-transparent bg-primary/15 text-[10px] text-primary"
+                      >
                         Default
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   {profile.description && (
@@ -547,45 +554,52 @@ export default function ProfilesPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   {profile.is_default !== 1 && (
-                    <button
+                    <Button
                       onClick={() => handleSetDefault(profile.id)}
                       disabled={settingDefaultId === profile.id}
-                      className="px-2.5 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 disabled:opacity-50"
+                      variant="secondary"
+                      size="xs"
                       title="Set as default profile"
                     >
                       {settingDefaultId === profile.id ? "Setting..." : "Set Default"}
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     onClick={() => openEdit(profile)}
-                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:text-foreground"
                     title="Edit profile"
                   >
                     <Pencil className="w-4 h-4" />
-                  </button>
+                  </Button>
                   {deleteConfirm === profile.id ? (
                     <div className="flex items-center gap-1">
-                      <button
+                      <Button
                         onClick={() => handleDelete(profile.id)}
-                        className="px-2 py-1 text-xs bg-destructive text-destructive-foreground rounded"
+                        variant="destructive"
+                        size="xs"
                       >
                         Confirm
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setDeleteConfirm(null)}
-                        className="px-2 py-1 text-xs bg-secondary text-muted-foreground rounded"
+                        variant="secondary"
+                        size="xs"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   ) : (
-                    <button
+                    <Button
                       onClick={() => setDeleteConfirm(profile.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-secondary rounded-lg transition-colors"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground hover:text-destructive"
                       title="Delete profile"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

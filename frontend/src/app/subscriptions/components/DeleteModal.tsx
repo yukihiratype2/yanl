@@ -2,6 +2,16 @@
 
 import { X } from "lucide-react";
 import type { Subscription } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type DeleteModalProps = {
   target: Subscription;
@@ -21,40 +31,49 @@ export default function DeleteModal({
   submitting,
 }: DeleteModalProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-xl w-full max-w-md overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">
-            Delete Subscription
-          </h2>
-          <button
-            onClick={onCancel}
-            className="text-muted-foreground hover:text-foreground"
-            disabled={submitting}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-5 space-y-4">
-          <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !submitting) {
+          onCancel();
+        }
+      }}
+    >
+      <DialogContent className="max-w-md p-0" showCloseButton={false}>
+        <DialogHeader className="border-b p-5">
+          <div className="flex items-center justify-between">
+            <DialogTitle>Delete Subscription</DialogTitle>
+            <Button
+              onClick={onCancel}
+              variant="ghost"
+              size="icon-sm"
+              disabled={submitting}
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+          <DialogDescription className="text-sm">
             Remove{" "}
             <span className="font-medium text-foreground">{target.title}</span>{" "}
             from subscriptions?
-          </p>
-
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 p-5">
           <label className="flex items-start gap-3 text-sm text-foreground">
-            <input
-              type="checkbox"
+            <Checkbox
               className="mt-0.5"
               checked={deleteAlsoFiles}
-              onChange={(e) => onDeleteAlsoFilesChange(e.target.checked)}
+              onCheckedChange={(checked) =>
+                onDeleteAlsoFilesChange(checked === true)
+              }
               disabled={submitting}
             />
             <span>Also delete files on disk</span>
           </label>
 
           {deleteAlsoFiles && (
-            <div className="text-xs text-muted-foreground bg-secondary/40 border border-border rounded-lg px-3 py-2">
+            <div className="rounded-lg border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
               Folder to be removed:{" "}
               <span className="font-mono">
                 {target.folder_path || "Not available"}
@@ -62,23 +81,23 @@ export default function DeleteModal({
             </div>
           )}
         </div>
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
-          <button
+        <DialogFooter className="border-t p-4">
+          <Button
             onClick={onCancel}
-            className="px-3 py-2 text-sm rounded-lg border border-border hover:bg-secondary"
+            variant="outline"
             disabled={submitting}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onConfirm}
-            className="px-3 py-2 text-sm rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 disabled:opacity-60"
+            variant="destructive"
             disabled={submitting}
           >
             {submitting ? "Deleting..." : "Delete"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

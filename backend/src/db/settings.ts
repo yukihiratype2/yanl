@@ -31,6 +31,7 @@ export function getAllSettings(): Record<string, string> {
     ai_api_url: config.ai.api_url,
     ai_api_token: config.ai.api_token,
     ai_model: config.ai.model,
+    notifactions: JSON.stringify(config.notifactions || []),
   };
 }
 

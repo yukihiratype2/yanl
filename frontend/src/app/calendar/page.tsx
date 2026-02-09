@@ -8,6 +8,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { getCalendarEpisodes, tmdbImage, type CalendarEpisode } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -86,30 +87,33 @@ export default function CalendarPage() {
           <CalendarDays className="w-6 h-6" /> Calendar
         </h1>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={prevMonth}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            variant="ghost"
+            size="icon-sm"
           >
             <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={goToday}
-            className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90"
+            variant="secondary"
+            size="sm"
           >
             Today
-          </button>
+          </Button>
           <h2 className="text-lg font-semibold w-40 text-center">
             {currentDate.toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
             })}
           </h2>
-          <button
+          <Button
             onClick={nextMonth}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            variant="ghost"
+            size="icon-sm"
           >
             <ChevronRight className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
       </div>
 

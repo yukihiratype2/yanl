@@ -8,6 +8,8 @@ import {
   X,
 } from "lucide-react";
 import PathPicker from "@/components/PathPicker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Field, Section } from "./Section";
 
 type SettingsMap = Record<string, string>;
@@ -45,41 +47,37 @@ export default function QbitSection({
   return (
     <Section title="Download Client (qBittorrent)" icon={<Download className="w-5 h-5" />}>
       <Field label="URL">
-        <input
+        <Input
           type="text"
           value={settings.qbit_url || ""}
           onChange={(e) => onChange("qbit_url", e.target.value)}
           placeholder="http://localhost:8080"
-          className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </Field>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Username">
-          <input
+          <Input
             type="text"
             value={settings.qbit_username || ""}
             onChange={(e) => onChange("qbit_username", e.target.value)}
             placeholder="admin"
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </Field>
         <Field label="Password">
-          <input
+          <Input
             type="password"
             value={settings.qbit_password || ""}
             onChange={(e) => onChange("qbit_password", e.target.value)}
             placeholder="••••••••"
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </Field>
       </div>
       <Field label="Tag" sublabel="Applied to every new torrent added by NAS Tools.">
-        <input
+        <Input
           type="text"
           value={settings.qbit_tag || ""}
           onChange={(e) => onChange("qbit_tag", e.target.value)}
           placeholder="nas-tools"
-          className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </Field>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -122,46 +120,47 @@ export default function QbitSection({
                   key={`${row.from}-${row.to}-${index}`}
                   className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2"
                 >
-                  <input
+                  <Input
                     type="text"
                     value={row.from}
                     onChange={(e) => onPathMapChange(index, "from", e.target.value)}
                     placeholder="/mnt/Media"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
-                  <input
+                  <Input
                     type="text"
                     value={row.to}
                     onChange={(e) => onPathMapChange(index, "to", e.target.value)}
                     placeholder="/media/Media"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
-                  <button
+                  <Button
                     onClick={() => onRemovePathMap(index)}
-                    className="px-3 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90"
+                    variant="secondary"
+                    size="sm"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
           )}
-          <button
+          <Button
             onClick={onAddPathMap}
-            className="px-3 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90"
+            variant="secondary"
+            size="sm"
           >
             Add Mapping
-          </button>
+          </Button>
         </div>
       </Field>
-      <button
+      <Button
         onClick={onTestConnection}
         disabled={testing}
-        className="flex items-center gap-2 px-3 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90 disabled:opacity-50"
+        variant="secondary"
+        className="w-fit"
       >
         {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <TestTube className="w-4 h-4" />}
         Test Connection
-      </button>
+      </Button>
       {status && (
         <div
           className={`flex items-center gap-2 text-sm ${

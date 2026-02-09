@@ -1,6 +1,8 @@
 "use client";
 
 import { Settings as SettingsIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Field, Section } from "./Section";
 
 type Props = {
@@ -17,18 +19,19 @@ export default function ApiTokenSection({ token, onTokenChange, onTokenSave }: P
         sublabel="Used for frontend-backend authentication (Optional for local network)."
       >
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={token}
             onChange={(e) => onTokenChange(e.target.value)}
-            className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="flex-1"
           />
-          <button
+          <Button
             onClick={onTokenSave}
-            className="px-3 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90"
+            variant="secondary"
+            size="sm"
           >
             Update
-          </button>
+          </Button>
         </div>
       </Field>
     </Section>

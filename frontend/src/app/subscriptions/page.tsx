@@ -8,6 +8,14 @@ import {
   updateSubscription,
   type Subscription,
 } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
 import DeleteModal from "./components/DeleteModal";
 import SearchModal from "./components/SearchModal";
@@ -187,51 +195,48 @@ export default function SubscriptionsPage() {
         </h1>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
-            <select
+            <Select
               value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              onValueChange={(value) => setSortKey(value as SortKey)}
             >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center border border-border rounded-lg overflow-hidden">
-              <button
+              <SelectTrigger className="w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+              <Button
                 onClick={() => setLayout("list")}
-                className={`p-2 text-sm transition-colors ${
-                  layout === "list"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:text-foreground"
-                }`}
+                variant={layout === "list" ? "default" : "ghost"}
+                size="icon-sm"
                 title="List layout"
                 aria-pressed={layout === "list"}
               >
                 <List className="w-4 h-4" />
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setLayout("grid")}
-                className={`p-2 text-sm transition-colors ${
-                  layout === "grid"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:text-foreground"
-                }`}
+                variant={layout === "grid" ? "default" : "ghost"}
+                size="icon-sm"
                 title="Grid layout"
                 aria-pressed={layout === "grid"}
               >
                 <LayoutGrid className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </div>
-          <button
+          <Button
             onClick={() => setShowSearch(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />
             Subscribe
-          </button>
+          </Button>
         </div>
       </div>
 

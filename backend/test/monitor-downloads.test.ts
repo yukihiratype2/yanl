@@ -80,6 +80,31 @@ const loggerMock = () => ({
 mock.module(modulePath("../src/services/logger"), loggerMock);
 mock.module("../logger", loggerMock);
 
+const notifactionCalls: any[] = [];
+const notifactionMock = () => ({
+  emitNotifactionEvent: (event: any) => notifactionCalls.push(event),
+});
+mock.module(modulePath("../src/services/notifaction"), notifactionMock);
+mock.module("../notifaction", notifactionMock);
+
+const matchersMock = () => ({
+  isTitleMatch: () => true,
+  matchesEpisodeSeason: () => ({ ok: true }),
+  matchesProfile: () => ({ ok: true }),
+});
+mock.module(modulePath("../src/services/monitor/matchers"), matchersMock);
+mock.module("./matchers", matchersMock);
+
+const utilsMock = () => ({
+  getTodayDateOnly: () => "2024-01-02",
+  parseMagnetHash: (link: string) => {
+    if (!link.startsWith("magnet:?xt=urn:btih:")) return null;
+    const hash = link.split("xt=urn:btih:")[1]?.split("&")[0];
+    return hash ? hash.toLowerCase() : null;
+  },
+});
+mock.module(modulePath("../src/services/monitor/utils"), utilsMock);
+mock.module("./utils", utilsMock);
 const downloads = await import("../src/services/monitor/downloads?test=monitor-downloads");
 
 describe("monitor/downloads", () => {
@@ -88,9 +113,12 @@ describe("monitor/downloads", () => {
     createdTorrents.length = 0;
     rssCalls.length = 0;
     loggerCalls.length = 0;
+    notifactionCalls.length = 0;
     subscriptions = [
       {
         id: 1,
+        source: "tvdb",
+        source_id: 100,
         media_type: "tv",
         title: "Show",
         season_number: 1,
@@ -141,5 +169,30 @@ describe("monitor/downloads", () => {
     expect(rssCalls.every((call) => call.opts?.episode === 1)).toBe(true);
     expect(updates.length <= 1).toBe(true);
     expect(createdTorrents.length <= 1).toBe(true);
+  });
+
+  it("emits movie release notifaction once per process when release date is reached", async () => {
+    subscriptions = [
+      {
+        id: 2,
+        source: "tvdb",
+        source_id: 200,
+        media_type: "movie",
+        title: "Movie",
+        season_number: null,
+        first_air_date: "2024-01-01",
+        status: "active",
+        profile_id: null,
+      },
+    ];
+    episodesBySubscription = {};
+
+    await downloads.searchAndDownload();
+    await downloads.searchAndDownload();
+
+    const releaseCalls = notifactionCalls.filter(
+      (entry) => entry.type === "media_released"
+    );
+    expect(releaseCalls.length).toBe(1);
   });
 });

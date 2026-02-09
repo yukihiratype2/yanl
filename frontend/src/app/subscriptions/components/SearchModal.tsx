@@ -12,6 +12,16 @@ import {
   type SearchResult,
   type TMDBTVDetail,
 } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
 
 type SearchModalProps = {
@@ -209,9 +219,9 @@ export default function SearchModal({ onClose }: SearchModalProps) {
               {result.original_name || result.original_title}
             </p>
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-              <span className="px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground">
+              <Badge variant="secondary" className="h-5 border-transparent text-[10px]">
                 {result.source === "bgm" ? "BGM" : "TVDB"}
-              </span>
+              </Badge>
               <span className="uppercase text-accent">
                 {result.media_type || "tv"}
               </span>
@@ -222,10 +232,11 @@ export default function SearchModal({ onClose }: SearchModalProps) {
             </div>
           </div>
           <div className="shrink-0">
-            <button
+            <Button
               onClick={() => handleOpenSubscribe(result)}
               disabled={subscribeLoading && subscribeTarget?.id === result.id}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
+              size="sm"
+              className="h-7 gap-1 text-xs"
             >
               {subscribeLoading && subscribeTarget?.id === result.id ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -233,7 +244,7 @@ export default function SearchModal({ onClose }: SearchModalProps) {
                 <Plus className="w-3 h-3" />
               )}
               Subscription
-            </button>
+            </Button>
           </div>
         </div>
       ))}
@@ -245,9 +256,9 @@ export default function SearchModal({ onClose }: SearchModalProps) {
       <div className="bg-card rounded-xl border border-border w-full max-w-2xl max-h-[70vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold">Search Media</h2>
-          <button onClick={onClose} className="p-1 hover:bg-secondary rounded-lg">
+          <Button onClick={onClose} variant="ghost" size="icon-sm">
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         <div className="p-4 border-b border-border">
@@ -277,19 +288,18 @@ export default function SearchModal({ onClose }: SearchModalProps) {
               </label>
             </div>
             <div className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search anime, TV shows, movies..."
                 autoFocus
-                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="flex-1"
               />
-              <button
+              <Button
                 onClick={handleSearch}
                 disabled={searching}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
               >
                 {searching ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -297,7 +307,7 @@ export default function SearchModal({ onClose }: SearchModalProps) {
                   <Search className="w-4 h-4" />
                 )}
                 Search
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -310,15 +320,16 @@ export default function SearchModal({ onClose }: SearchModalProps) {
           <div className="bg-card border border-border rounded-xl w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h3 className="text-lg font-semibold">Subscribe</h3>
-              <button
+              <Button
                 onClick={() => {
                   setSubscribeTarget(null);
                   setSubscribeDetail(null);
                 }}
-                className="p-1 hover:bg-secondary rounded-lg"
+                variant="ghost"
+                size="icon-sm"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
             <div className="p-4 space-y-4">
               <div className="flex gap-3">
@@ -343,28 +354,22 @@ export default function SearchModal({ onClose }: SearchModalProps) {
                     Type
                   </label>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => setMediaTypeChoice("tv")}
-                      className={`px-3 py-1.5 text-xs rounded-lg border ${
-                        mediaTypeChoice === "tv"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-secondary text-muted-foreground border-border"
-                      }`}
+                      variant={mediaTypeChoice === "tv" ? "default" : "secondary"}
+                      size="sm"
                     >
                       TV
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => setMediaTypeChoice("anime")}
-                      className={`px-3 py-1.5 text-xs rounded-lg border ${
-                        mediaTypeChoice === "anime"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-secondary text-muted-foreground border-border"
-                      }`}
+                      variant={mediaTypeChoice === "anime" ? "default" : "secondary"}
+                      size="sm"
                     >
                       Anime
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -376,20 +381,24 @@ export default function SearchModal({ onClose }: SearchModalProps) {
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Season
                     </label>
-                    <select
-                      value={selectedSeason}
-                      onChange={(e) => setSelectedSeason(e.target.value)}
-                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="all">All seasons</option>
-                      {subscribeDetail?.seasons
-                        .filter((s) => s.season_number > 0)
-                        .map((season) => (
-                          <option key={season.id} value={season.season_number}>
-                            {season.name}
-                          </option>
-                        ))}
-                    </select>
+                    <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All seasons</SelectItem>
+                        {subscribeDetail?.seasons
+                          .filter((s) => s.season_number > 0)
+                          .map((season) => (
+                            <SelectItem
+                              key={season.id}
+                              value={String(season.season_number)}
+                            >
+                              {season.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
 
@@ -397,44 +406,51 @@ export default function SearchModal({ onClose }: SearchModalProps) {
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Profile
                 </label>
-                <select
-                  value={selectedProfileId ?? ""}
-                  onChange={(e) =>
+                <Select
+                  value={
+                    selectedProfileId != null
+                      ? String(selectedProfileId)
+                      : "__default"
+                  }
+                  onValueChange={(value) =>
                     setSelectedProfileId(
-                      e.target.value ? Number(e.target.value) : null
+                      value === "__default" ? null : Number(value)
                     )
                   }
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="">Default (if set)</option>
-                  {profiles.length === 0 && (
-                    <option value="" disabled>
-                      No profiles available
-                    </option>
-                  )}
-                  {profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.name}
-                      {profile.is_default === 1 ? " (Default)" : ""}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__default">Default (if set)</SelectItem>
+                    {profiles.length === 0 && (
+                      <SelectItem value="__no_profiles" disabled>
+                        No profiles available
+                      </SelectItem>
+                    )}
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={String(profile.id)}>
+                        {profile.name}
+                        {profile.is_default === 1 ? " (Default)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
-              <button
+              <Button
                 onClick={() => {
                   setSubscribeTarget(null);
                   setSubscribeDetail(null);
                 }}
-                className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+                variant="ghost"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleConfirmSubscribe}
                 disabled={subscribing === subscribeTarget.id}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
               >
                 {subscribing === subscribeTarget.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -442,7 +458,7 @@ export default function SearchModal({ onClose }: SearchModalProps) {
                   <Plus className="w-4 h-4" />
                 )}
                 Subscribe
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -30,4 +30,42 @@ describe("config", () => {
     expect(updated.rss.eject_title_rules.length).not.toBe(before);
     rmSync(tempDir, { recursive: true, force: true });
   });
+
+  it("updates notifactions with normalized provider config", async () => {
+    const configModule = await import("../src/config?test=notifactions");
+    configModule.loadConfig();
+    configModule.updateConfigValues({
+      notifactions: JSON.stringify([
+        {
+          id: "n1",
+          name: "Webhook",
+          enabled: true,
+          provider: "webhook",
+          events: ["media_released", "invalid"],
+          config: {
+            url: "https://example.com/hook",
+            headers: {
+              Authorization: "Bearer token",
+            },
+          },
+        },
+        {
+          id: "n2",
+          name: "Telegram",
+          enabled: true,
+          provider: "telegram",
+          events: ["download_completed"],
+          config: {
+            bot_token: "123:abc",
+            chat_id: "-10001",
+          },
+        },
+      ]),
+    });
+    const updated = configModule.loadConfig();
+    expect(updated.notifactions.length).toBe(2);
+    expect(updated.notifactions[0]?.provider).toBe("webhook");
+    expect(updated.notifactions[0]?.events).toEqual(["media_released"]);
+    expect(updated.notifactions[1]?.provider).toBe("telegram");
+  });
 });

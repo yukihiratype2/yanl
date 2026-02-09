@@ -12,6 +12,8 @@ import {
   type BgmSubjectSmall,
 } from "@/lib/bgm";
 import { getSubscriptions, subscribe, type Subscription } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getErrorMessage } from "@/lib/errors";
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 7];
@@ -314,15 +316,14 @@ export default function MediaListPage() {
                                 className="w-20 h-28 object-cover rounded-lg shrink-0"
                               />
                               {isSubscribed && (
-                                <span
+                                <Badge
                                   className={[
-                                    "absolute left-1 top-1 rounded-full",
-                                    "bg-emerald-500/90 px-2 py-0.5",
-                                    "text-[10px] font-semibold text-white",
+                                    "absolute left-1 top-1 h-5 border-transparent",
+                                    "bg-emerald-500/90 text-[10px] text-white",
                                   ].join(" ")}
                                 >
                                   Subscribed
-                                </span>
+                                </Badge>
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -390,24 +391,24 @@ export default function MediaListPage() {
                     </div>
                   )}
                 {selectedSubscribed && (
-                  <span
+                  <Badge
                     className={[
-                      "mt-2 inline-flex rounded-full",
-                      "bg-emerald-500/90 px-2 py-0.5",
-                      "text-xs font-semibold text-white",
+                      "mt-2 h-5 border-transparent",
+                      "bg-emerald-500/90 text-xs text-white",
                     ].join(" ")}
                   >
                     Subscribed
-                  </span>
+                  </Badge>
                 )}
               </div>
-              <button
+              <Button
                 type="button"
-                className="p-1 rounded-md hover:bg-secondary"
+                variant="ghost"
+                size="icon-sm"
                 onClick={closeDetail}
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 grid gap-4 md:grid-cols-[180px,1fr]">
@@ -519,9 +520,10 @@ export default function MediaListPage() {
                 {tagItems.length > 0 && (
                   <div className="flex flex-wrap gap-2 text-xs">
                     {tagItems.map((tag) => (
-                      <span
+                      <Badge
                         key={tag.label}
-                        className="rounded-full bg-secondary/70 px-2 py-0.5 text-muted-foreground"
+                        variant="secondary"
+                        className="h-5 border-transparent bg-secondary/70 text-muted-foreground"
                       >
                         {tag.label}
                         {tag.count != null && (
@@ -529,7 +531,7 @@ export default function MediaListPage() {
                             {tag.count}
                           </span>
                         )}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 )}
@@ -570,7 +572,7 @@ export default function MediaListPage() {
                   <span className="text-emerald-600">Already subscribed</span>
                 )}
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={handleSubscribe}
                 disabled={
@@ -578,19 +580,13 @@ export default function MediaListPage() {
                   subscribeState.status === "success" ||
                   Boolean(selectedSubscribed)
                 }
-                className={[
-                  "px-4 py-2 rounded-lg text-sm font-medium",
-                  "bg-primary text-primary-foreground",
-                  "hover:opacity-90 transition-opacity",
-                  "disabled:opacity-60 disabled:cursor-not-allowed",
-                ].join(" ")}
               >
                 {subscribeState.status === "loading"
                   ? "Subscribing..."
                   : selectedSubscribed
                     ? "Subscribed"
                     : "Subscribe"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

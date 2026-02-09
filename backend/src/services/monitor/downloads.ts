@@ -16,9 +16,12 @@ import {
 import * as rss from "../rss";
 import { qbittorrent } from "../qbittorrent";
 import { logger } from "../logger";
+import { emitNotifactionEvent } from "../notifaction";
 import { getTodayDateOnly, parseMagnetHash } from "./utils";
 import { isTitleMatch, matchesEpisodeSeason, matchesProfile } from "./matchers";
 import { isOnOrBeforeDateOnly } from "../../lib/date";
+
+const movieReleaseNotifactionsSent = new Set<number>();
 
 export async function searchAndDownload() {
   const subscriptions = getActiveSubscriptions();
@@ -32,9 +35,35 @@ export async function searchAndDownload() {
     }
 
     if (sub.media_type === "movie" && sub.status === "active") {
+      maybeEmitMovieReleasedNotifaction(sub, today);
       await searchMovieForSubscription(sub);
     }
   }
+}
+
+function maybeEmitMovieReleasedNotifaction(sub: Subscription, today: string): void {
+  if (!sub.first_air_date) return;
+  if (movieReleaseNotifactionsSent.has(sub.id)) return;
+
+  const released = isOnOrBeforeDateOnly(sub.first_air_date, today);
+  if (released !== true) return;
+
+  movieReleaseNotifactionsSent.add(sub.id);
+  emitNotifactionEvent({
+    type: "media_released",
+    subscription: {
+      id: sub.id,
+      title: sub.title,
+      media_type: sub.media_type,
+      source: sub.source,
+      source_id: sub.source_id,
+      season_number: sub.season_number,
+    },
+    data: {
+      release_date: sub.first_air_date,
+      media_type: "movie",
+    },
+  });
 }
 
 function getPendingEpisodes(

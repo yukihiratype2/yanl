@@ -1,6 +1,8 @@
 "use client";
 
 import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Field, Section } from "./Section";
 
 type Props = {
@@ -29,29 +31,30 @@ export default function EjectTitleSection({ rules, onAdd, onChange, onRemove }: 
                   key={`${rule}-${index}`}
                   className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2"
                 >
-                  <input
+                  <Input
                     type="text"
                     value={rule}
                     onChange={(e) => onChange(index, e.target.value)}
                     placeholder="720[Pp]"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
-                  <button
+                  <Button
                     onClick={() => onRemove(index)}
-                    className="px-3 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90"
+                    variant="secondary"
+                    size="sm"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
           )}
-          <button
+          <Button
             onClick={onAdd}
-            className="px-3 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:opacity-90"
+            variant="secondary"
+            size="sm"
           >
             Add Rule
-          </button>
+          </Button>
         </div>
       </Field>
     </Section>

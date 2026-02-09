@@ -13,7 +13,11 @@ let bgmEpisodes: any[] = [];
 const modelsMock = () => ({
   getActiveSubscriptions: () => activeSubscriptions,
   getEpisodesBySubscription: (id: number) => episodesBySubscription[id] ?? [],
-  createEpisode: (data: any) => created.push(data),
+  createEpisode: (data: any) => {
+    const record = { id: created.length + 1, ...data };
+    created.push(record);
+    return record;
+  },
   getAllSubscriptions: () => [],
   getSubscriptionById: () => null,
   updateSubscription: () => {},
@@ -61,6 +65,13 @@ const loggerMock = () => ({
 mock.module(modulePath("../src/services/logger"), loggerMock);
 mock.module("../logger", loggerMock);
 
+const notifactionCalls: any[] = [];
+const notifactionMock = () => ({
+  emitNotifactionEvent: (event: any) => notifactionCalls.push(event),
+});
+mock.module(modulePath("../src/services/notifaction"), notifactionMock);
+mock.module("../notifaction", notifactionMock);
+
 const utilsMock = () => ({
   getTodayDateOnly: () => todayValue,
 });
@@ -72,6 +83,7 @@ const discovery = await import("../src/services/monitor/discovery?test=monitor-d
 describe("monitor/discovery", () => {
   beforeEach(() => {
     created.length = 0;
+    notifactionCalls.length = 0;
     todayValue = "2024-01-02";
     activeSubscriptions = [
       {
@@ -137,6 +149,10 @@ describe("monitor/discovery", () => {
     for (const bgmKey of bgmKeys) {
       expect(bgmKey).toBe("2:1:2024-01-01");
     }
+    expect(notifactionCalls.length).toBeGreaterThan(0);
+    expect(
+      notifactionCalls.every((entry) => entry.type === "media_released")
+    ).toBe(true);
   });
 
   it("skips TMDB episode when matched by legacy episode+air_date", async () => {
@@ -152,5 +168,6 @@ describe("monitor/discovery", () => {
     };
     await discovery.checkNewEpisodes();
     expect(created.length).toBe(0);
+    expect(notifactionCalls.length).toBe(0);
   });
 });

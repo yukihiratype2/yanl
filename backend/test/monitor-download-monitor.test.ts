@@ -85,12 +85,24 @@ const loggerMock = () => ({
 mock.module(modulePath("../src/services/logger"), loggerMock);
 mock.module("../logger", loggerMock);
 
+const notifactionCalls: any[] = [];
+const notifactionMock = () => ({
+  emitNotifactionEvent: (event: any) => notifactionCalls.push(event),
+});
+mock.module(modulePath("../src/services/notifaction"), notifactionMock);
+mock.module("../notifaction", notifactionMock);
+
 const monitor = await import("../src/services/monitor/download-monitor?test=monitor-download-monitor");
 
 describe("monitor/download-monitor", () => {
   it("moves completed episode files", async () => {
+    notifactionCalls.length = 0;
     await monitor.monitorDownloads();
     expect(updates.length).toBe(1);
     expect(updates[0].data.status).toBe("completed");
+    expect(notifactionCalls.map((entry) => entry.type)).toEqual([
+      "download_completed",
+      "media_moved",
+    ]);
   });
 });

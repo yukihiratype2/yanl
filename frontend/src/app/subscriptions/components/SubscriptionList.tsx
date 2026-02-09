@@ -5,6 +5,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { KeyboardEvent } from "react";
 import { tmdbImage, type Subscription } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
 type LayoutMode = "list" | "grid";
 
@@ -18,21 +21,24 @@ type SubscriptionListProps = {
 
 function statusClasses(status: string) {
   return status === "active"
-    ? "bg-success/20 text-success"
-    : "bg-muted/20 text-muted-foreground";
+    ? "border-transparent bg-success/20 text-success"
+    : "border-transparent bg-muted/20 text-muted-foreground";
 }
 
 function SubscriptionMeta({ sub }: { sub: Subscription }) {
   return (
     <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-      <span className="px-2 py-0.5 bg-primary/20 text-primary rounded-full uppercase">
+      <Badge
+        variant="secondary"
+        className="h-5 border-transparent bg-primary/20 text-[10px] uppercase text-primary"
+      >
         {sub.media_type}
-      </span>
+      </Badge>
       {sub.season_number != null && <span>Season {sub.season_number}</span>}
       {sub.total_episodes && <span>{sub.total_episodes} episodes</span>}
-      <span className={`px-2 py-0.5 rounded-full ${statusClasses(sub.status)}`}>
+      <Badge className={statusClasses(sub.status)}>
         {sub.status}
-      </span>
+      </Badge>
     </div>
   );
 }
@@ -93,43 +99,29 @@ export default function SubscriptionList({
                   className="w-full aspect-[2/3] object-cover"
                 />
                 <div className="absolute top-3 right-3 flex items-center gap-2">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={isActive(sub)}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggle(sub);
-                    }}
+                  <Switch
+                    checked={isActive(sub)}
+                    onClick={(event) => event.stopPropagation()}
+                    onCheckedChange={() => onToggle(sub)}
                     disabled={isUpdating(sub.id)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full border transition-colors ${
-                      isActive(sub)
-                        ? "bg-success/60 border-success/70"
-                        : "bg-muted border-border"
-                    } ${isUpdating(sub.id) ? "opacity-60 cursor-not-allowed" : ""}`}
                     title={isActive(sub) ? "Disable subscription" : "Enable subscription"}
                     aria-label={`${
                       isActive(sub) ? "Disable" : "Enable"
                     } ${sub.title}`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-background transition ${
-                        isActive(sub) ? "translate-x-4" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                  <button
+                  />
+                  <Button
                     type="button"
+                    variant="destructive"
+                    size="icon-sm"
                     onClick={(event) => {
                       event.stopPropagation();
                       onDelete(sub);
                     }}
-                    className="p-2 rounded-lg bg-background/80 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
                     title="Delete"
                     aria-label={`Delete ${sub.title}`}
                   >
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="flex-1 p-4">
@@ -162,43 +154,30 @@ export default function SubscriptionList({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={isActive(sub)}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onToggle(sub);
-                  }}
+                <Switch
+                  checked={isActive(sub)}
+                  onClick={(event) => event.stopPropagation()}
+                  onCheckedChange={() => onToggle(sub)}
                   disabled={isUpdating(sub.id)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full border transition-colors ${
-                    isActive(sub)
-                      ? "bg-success/60 border-success/70"
-                      : "bg-muted border-border"
-                  } ${isUpdating(sub.id) ? "opacity-60 cursor-not-allowed" : ""}`}
                   title={isActive(sub) ? "Disable subscription" : "Enable subscription"}
                   aria-label={`${
                     isActive(sub) ? "Disable" : "Enable"
                   } ${sub.title}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-background transition ${
-                      isActive(sub) ? "translate-x-4" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-                <button
+                />
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={(event) => {
                     event.stopPropagation();
                     onDelete(sub);
                   }}
-                  className="p-2 hover:bg-destructive/20 text-destructive rounded-lg transition-colors"
+                  className="text-destructive hover:bg-destructive/20 hover:text-destructive"
                   title="Delete"
                   aria-label={`Delete ${sub.title}`}
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             </div>
           )}

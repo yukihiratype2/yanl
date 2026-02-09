@@ -2,6 +2,36 @@ import { parse, stringify } from "yaml";
 import { join } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 
+export type NotifactionEventType =
+  | "media_released"
+  | "download_completed"
+  | "media_moved";
+
+export type NotifactionProvider = "webhook" | "telegram";
+
+type NotifactionBase = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  events: NotifactionEventType[];
+};
+
+export type NotifactionConfig =
+  | (NotifactionBase & {
+      provider: "webhook";
+      config: {
+        url: string;
+        headers: Record<string, string>;
+      };
+    })
+  | (NotifactionBase & {
+      provider: "telegram";
+      config: {
+        bot_token: string;
+        chat_id: string;
+      };
+    });
+
 export interface Config {
   core: {
     api_token: string;
@@ -41,6 +71,7 @@ export interface Config {
     api_token: string;
     model: string;
   };
+  notifactions: NotifactionConfig[];
 }
 
 const CONFIG_PATH =
@@ -55,6 +86,96 @@ function generateToken(): string {
     token += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return token;
+}
+
+const NOTIFACTION_EVENT_TYPES: NotifactionEventType[] = [
+  "media_released",
+  "download_completed",
+  "media_moved",
+];
+
+const NOTIFACTION_PROVIDERS = new Set<NotifactionProvider>([
+  "webhook",
+  "telegram",
+]);
+
+function generateNotifactionId(): string {
+  return `notifaction-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizeNotifactionEvents(value: unknown): NotifactionEventType[] {
+  if (!Array.isArray(value)) return [...NOTIFACTION_EVENT_TYPES];
+  const events = value
+    .filter((entry): entry is NotifactionEventType =>
+      NOTIFACTION_EVENT_TYPES.includes(entry as NotifactionEventType)
+    )
+    .filter((entry, index, arr) => arr.indexOf(entry) === index);
+  return events.length > 0 ? events : [...NOTIFACTION_EVENT_TYPES];
+}
+
+function normalizeNotifactionHeaders(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const headers: Record<string, string> = {};
+  for (const [key, headerValue] of Object.entries(value)) {
+    const normalizedKey = key.trim();
+    if (!normalizedKey || typeof headerValue !== "string") continue;
+    const normalizedValue = headerValue.trim();
+    if (!normalizedValue) continue;
+    headers[normalizedKey] = normalizedValue;
+  }
+  return headers;
+}
+
+function normalizeNotifactionEntry(value: unknown): NotifactionConfig | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const item = value as Record<string, unknown>;
+  const provider = NOTIFACTION_PROVIDERS.has(item.provider as NotifactionProvider)
+    ? (item.provider as NotifactionProvider)
+    : "webhook";
+  const id = typeof item.id === "string" && item.id.trim() ? item.id.trim() : generateNotifactionId();
+  const name =
+    typeof item.name === "string" && item.name.trim()
+      ? item.name.trim()
+      : `Notifaction ${id.slice(-4)}`;
+  const enabled = item.enabled !== false;
+  const events = normalizeNotifactionEvents(item.events);
+  const config = item.config && typeof item.config === "object" && !Array.isArray(item.config)
+    ? (item.config as Record<string, unknown>)
+    : {};
+
+  if (provider === "telegram") {
+    return {
+      id,
+      name,
+      enabled,
+      provider: "telegram",
+      events,
+      config: {
+        bot_token:
+          typeof config.bot_token === "string" ? config.bot_token.trim() : "",
+        chat_id: typeof config.chat_id === "string" ? config.chat_id.trim() : "",
+      },
+    };
+  }
+
+  return {
+    id,
+    name,
+    enabled,
+    provider: "webhook",
+    events,
+    config: {
+      url: typeof config.url === "string" ? config.url.trim() : "",
+      headers: normalizeNotifactionHeaders(config.headers),
+    },
+  };
+}
+
+function normalizeNotifactions(value: unknown): NotifactionConfig[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => normalizeNotifactionEntry(entry))
+    .filter((entry): entry is NotifactionConfig => entry !== null);
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -94,6 +215,7 @@ const DEFAULT_CONFIG: Config = {
     api_token: "",
     model: "",
   },
+  notifactions: [],
 };
 
 let currentConfig: Config | null = null;
@@ -140,6 +262,7 @@ export function loadConfig(): Config {
       tmdb: { ...DEFAULT_CONFIG.tmdb, ...parsed.tmdb },
       media_dirs: { ...DEFAULT_CONFIG.media_dirs, ...parsed.media_dirs },
       ai: { ...DEFAULT_CONFIG.ai, ...parsed.ai },
+      notifactions: normalizeNotifactions(parsed.notifactions),
     };
 
     return currentConfig;
@@ -184,6 +307,7 @@ export function getConfigValue(key: string): string {
     case "ai_api_url": return config.ai.api_url;
     case "ai_api_token": return config.ai.api_token;
     case "ai_model": return config.ai.model;
+    case "notifactions": return JSON.stringify(config.notifactions || []);
     default: return "";
   }
 }
@@ -238,6 +362,14 @@ export function updateConfigValues(updates: Record<string, string>): void {
       case "ai_api_url": config.ai.api_url = value; break;
       case "ai_api_token": config.ai.api_token = value; break;
       case "ai_model": config.ai.model = value; break;
+      case "notifactions":
+        try {
+          const parsed = JSON.parse(value);
+          config.notifactions = normalizeNotifactions(parsed);
+        } catch {
+          // Ignore invalid JSON, keep existing notifactions
+        }
+        break;
     }
   }
 

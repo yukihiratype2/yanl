@@ -7,6 +7,7 @@ import {
 import * as tmdb from "../tmdb";
 import * as bgm from "../bgm";
 import { logger } from "../logger";
+import { emitNotifactionEvent } from "../notifaction";
 import { isOnOrBeforeDateOnly, normalizeDateOnly } from "../../lib/date";
 import { getTodayDateOnly } from "./utils";
 
@@ -108,7 +109,7 @@ async function processTVSubscription(sub: Subscription) {
         },
         "Found new episode"
       );
-      createEpisode({
+      const createdEpisode = createEpisode({
         subscription_id: sub.id,
         season_number: seasonData.season_number,
         episode_number: ep.episode_number,
@@ -119,6 +120,24 @@ async function processTVSubscription(sub: Subscription) {
         status: "pending",
         torrent_hash: null,
         file_path: null,
+      });
+      emitNotifactionEvent({
+        type: "media_released",
+        subscription: {
+          id: sub.id,
+          title: sub.title,
+          media_type: sub.media_type,
+          source: sub.source,
+          source_id: sub.source_id,
+          season_number: sub.season_number,
+        },
+        data: {
+          episode_id: createdEpisode.id,
+          season_number: seasonData.season_number,
+          episode_number: createdEpisode.episode_number,
+          episode_title: createdEpisode.title,
+          air_date: createdEpisode.air_date,
+        },
       });
     }
   }
@@ -138,7 +157,7 @@ async function processBgmSubscription(sub: Subscription) {
     const normalizedAirDate = normalizeReleasedDate(ep.airdate, today);
     if (!normalizedAirDate) continue;
 
-    createEpisode({
+    const createdEpisode = createEpisode({
       subscription_id: sub.id,
       season_number: null,
       episode_number: episodeNumber,
@@ -149,6 +168,23 @@ async function processBgmSubscription(sub: Subscription) {
       status: "pending",
       torrent_hash: null,
       file_path: null,
+    });
+    emitNotifactionEvent({
+      type: "media_released",
+      subscription: {
+        id: sub.id,
+        title: sub.title,
+        media_type: sub.media_type,
+        source: sub.source,
+        source_id: sub.source_id,
+        season_number: sub.season_number,
+      },
+      data: {
+        episode_id: createdEpisode.id,
+        episode_number: createdEpisode.episode_number,
+        episode_title: createdEpisode.title,
+        air_date: createdEpisode.air_date,
+      },
     });
   }
 }

@@ -3,6 +3,7 @@
 import { AlertCircle } from "lucide-react";
 import PathPicker from "@/components/PathPicker";
 import { Field, Section } from "./Section";
+import StyledSelect from "./StyledSelect";
 
 type SettingsMap = Record<string, string>;
 
@@ -12,6 +13,8 @@ type Props = {
 };
 
 export default function LoggingSection({ settings, onChange }: Props) {
+  const logLevel = settings.log_level || "warn";
+
   return (
     <Section title="Logging" icon={<AlertCircle className="w-5 h-5" />}>
       <Field label="Log Directory" sublabel="Where backend logs are written (backend.log).">
@@ -22,18 +25,42 @@ export default function LoggingSection({ settings, onChange }: Props) {
         />
       </Field>
       <Field label="Log Level" sublabel="HTTP access logs are emitted at trace level.">
-        <select
-          value={settings.log_level || "warn"}
-          onChange={(e) => onChange("log_level", e.target.value)}
-          className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="trace">trace</option>
-          <option value="debug">debug</option>
-          <option value="info">info</option>
-          <option value="warn">warn</option>
-          <option value="error">error</option>
-          <option value="fatal">fatal</option>
-        </select>
+        <StyledSelect
+          value={logLevel}
+          onChange={(value) => onChange("log_level", value)}
+          options={[
+            {
+              value: "trace",
+              label: "trace",
+              description: "Most verbose. Includes detailed diagnostics and request internals.",
+            },
+            {
+              value: "debug",
+              label: "debug",
+              description: "Useful for troubleshooting behavior without full trace noise.",
+            },
+            {
+              value: "info",
+              label: "info",
+              description: "Operational milestones and normal service activity.",
+            },
+            {
+              value: "warn",
+              label: "warn",
+              description: "Potential issues worth attention (recommended default).",
+            },
+            {
+              value: "error",
+              label: "error",
+              description: "Only failures that impact functionality.",
+            },
+            {
+              value: "fatal",
+              label: "fatal",
+              description: "Critical failures right before shutdown or crash conditions.",
+            },
+          ]}
+        />
       </Field>
     </Section>
   );

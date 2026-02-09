@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen, Loader2, X } from "lucide-react";
 import { listDirectories, type DirEntry } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getErrorMessage, isAbortError } from "@/lib/errors";
 
 export type PathPickerProps = {
@@ -74,7 +76,7 @@ export default function PathPicker({
   return (
     <div className="relative">
       <div className="flex items-center gap-2">
-        <input
+        <Input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -82,23 +84,24 @@ export default function PathPicker({
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+          className="bg-background"
         />
         {value && !disabled && (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon-sm"
             onClick={() => onChange("")}
-            className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-colors"
             title="Clear"
           >
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         )}
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-2 border border-border rounded-lg bg-background shadow-lg z-20">
-          <div className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground border-b border-border">
+        <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-md border bg-popover shadow-md">
+          <div className="flex items-center justify-between border-b px-3 py-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <FolderOpen className="w-3 h-3" />
               Directories
@@ -118,16 +121,18 @@ export default function PathPicker({
 
           <div className="max-h-56 overflow-auto">
             {dirs.map((dir) => (
-              <button
+              <Button
                 key={dir.path}
                 type="button"
+                variant="ghost"
+                size="sm"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handlePick(dir.path)}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                className="h-auto w-full justify-start rounded-none px-3 py-2 text-left text-sm"
                 title={dir.path}
               >
                 {dir.name}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 type Theme = "light" | "dark" | "system";
 
@@ -34,24 +35,28 @@ function applyTheme(theme: Theme) {
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
 }
 
+function resolveInitialTheme(): Theme {
+  const storedTheme = getStoredTheme();
+  if (storedTheme) {
+    return storedTheme;
+  }
+  if (typeof window !== "undefined") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return "light";
+}
+
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useState<Theme>(resolveInitialTheme);
 
   useEffect(() => {
-    const storedTheme = getStoredTheme();
-    if (storedTheme) {
-      setTheme(storedTheme);
-      applyTheme(storedTheme);
-      return;
-    }
-    setTheme("system");
-    applyTheme("system");
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    );
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
       if (theme === "system") {
         applyTheme("system");
@@ -84,23 +89,25 @@ export function ThemeToggle() {
     theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light";
 
   return (
-    <button
+    <Button
       type="button"
       onClick={handleToggle}
-      className="flex w-full items-center justify-between rounded-md border border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+      variant="outline"
+      size="sm"
+      className="w-full justify-between text-xs text-muted-foreground hover:text-foreground"
       aria-label={`Toggle theme (current: ${themeLabel})`}
     >
       <span>Theme</span>
       <span className="flex items-center gap-1.5 text-foreground">
-        <span className="text-[11px] font-semibold">{themeLabel}</span>
+        <span className="text-xs font-semibold">{themeLabel}</span>
         {theme === "dark" ? (
-          <Moon className="h-3.5 w-3.5" />
+          <Moon className="h-4 w-4" />
         ) : theme === "light" ? (
-          <Sun className="h-3.5 w-3.5" />
+          <Sun className="h-4 w-4" />
         ) : (
-          <Monitor className="h-3.5 w-3.5" />
+          <Monitor className="h-4 w-4" />
         )}
       </span>
-    </button>
+    </Button>
   );
 }

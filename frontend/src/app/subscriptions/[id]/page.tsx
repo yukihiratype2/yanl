@@ -9,13 +9,17 @@ import {
   updateSubscription,
   type Subscription,
 } from "@/lib/api";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/errors";
 import ExpandedSubscription from "../components/ExpandedSubscription";
 
 function statusClasses(status: string) {
   return status === "active"
-    ? "bg-success/20 text-success"
-    : "bg-muted/20 text-muted-foreground";
+    ? "border-transparent bg-success/20 text-success"
+    : "border-transparent bg-muted/20 text-muted-foreground";
 }
 
 export default function SubscriptionDetailPage() {
@@ -70,14 +74,14 @@ export default function SubscriptionDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
           onClick={() => router.push("/subscriptions")}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-secondary"
+          variant="outline"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
-        </button>
+        </Button>
         <h1 className="text-2xl font-bold">Subscription Detail</h1>
       </div>
 
@@ -88,9 +92,9 @@ export default function SubscriptionDetailPage() {
       )}
 
       {!loading && error && (
-        <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {!loading && subscription && (
@@ -109,33 +113,25 @@ export default function SubscriptionDetailPage() {
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-muted-foreground">
-                <span className="px-2 py-0.5 bg-primary/20 text-primary rounded-full uppercase">
+                <Badge
+                  variant="secondary"
+                  className="h-5 border-transparent bg-primary/20 text-[10px] uppercase text-primary"
+                >
                   {subscription.media_type}
-                </span>
+                </Badge>
                 {subscription.season_number != null && (
                   <span>Season {subscription.season_number}</span>
                 )}
                 {subscription.total_episodes && (
                   <span>{subscription.total_episodes} episodes</span>
                 )}
-                <span
-                  className={`px-2 py-0.5 rounded-full ${statusClasses(
-                    subscription.status
-                  )}`}
-                >
+                <Badge className={statusClasses(subscription.status)}>
                   {subscription.status}
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={subscription.status === "active"}
+                </Badge>
+                <Switch
+                  checked={subscription.status === "active"}
                   onClick={handleToggle}
                   disabled={updating}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full border transition-colors ${
-                    subscription.status === "active"
-                      ? "bg-success/60 border-success/70"
-                      : "bg-muted border-border"
-                  } ${updating ? "opacity-60 cursor-not-allowed" : ""}`}
                   title={
                     subscription.status === "active"
                       ? "Disable subscription"
@@ -144,15 +140,7 @@ export default function SubscriptionDetailPage() {
                   aria-label={`${
                     subscription.status === "active" ? "Disable" : "Enable"
                   } ${subscription.title}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-background transition ${
-                      subscription.status === "active"
-                        ? "translate-x-4"
-                        : "translate-x-1"
-                    }`}
-                  />
-                </button>
+                />
                 {subscription.first_air_date && (
                   <span>{subscription.first_air_date}</span>
                 )}
