@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 mock.restore();
 import { makeTextResponse, mockFetch } from "./helpers";
@@ -42,6 +45,9 @@ describe("services/qbittorrent", () => {
     settings.qbit_username = "user";
     settings.qbit_password = "pass";
     settings.qbit_tag = "nas";
+    settings.qbit_download_dir_anime = "";
+    settings.qbit_download_dir_tv = "";
+    settings.qbit_download_dir_movie = "";
     settings.qbit_path_map = JSON.stringify([{ from: "/remote", to: "/local" }]);
   });
 
@@ -82,6 +88,117 @@ describe("services/qbittorrent", () => {
     const qb = await loadQb();
     const mapped = qb.mapQbitPathToLocal("C:/downloads/show/file.mkv");
     expect(mapped).toBe("d:/media/show/file.mkv");
+  });
+
+  it("sanity check passes when mapped paths exist", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "nas-tools-path-map-pass-"));
+    const mappedRoot = join(tempDir, "mapped");
+    const mappedTorrentPath = join(mappedRoot, "show");
+    const mappedTvDir = join(mappedRoot, "tv");
+    mkdirSync(mappedTorrentPath, { recursive: true });
+    mkdirSync(mappedTvDir, { recursive: true });
+
+    settings.qbit_path_map = JSON.stringify([{ from: "/remote", to: mappedRoot }]);
+    settings.qbit_download_dir_tv = "/remote/tv";
+    const qb = await loadQb();
+    (qb as any).getManagedQbitTorrents = async () => [
+      { hash: "h1", name: "Show", content_path: "/remote/show" },
+    ];
+
+    const result = await qb.sanityCheckPathMap();
+    expect(result.ok).toBe(true);
+    expect(result.summary.checkedDirs).toBe(1);
+    expect(result.summary.checkedTorrents).toBe(1);
+    expect(result.summary.failCount).toBe(0);
+    expect(result.checks.every((check) => check.reason === "mapped_path_exists")).toBe(true);
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("sanity check fails when no mapping rule matches missing source paths", async () => {
+    settings.qbit_path_map = JSON.stringify([{ from: "/remote", to: "/local" }]);
+    settings.qbit_download_dir_tv = "/unmapped/tv";
+    const qb = await loadQb();
+    (qb as any).getManagedQbitTorrents = async () => [
+      { hash: "h1", name: "Show", content_path: "/unmapped/show" },
+    ];
+
+    const result = await qb.sanityCheckPathMap();
+    expect(result.ok).toBe(false);
+    expect(result.summary.failCount).toBe(2);
+    expect(result.checks.some((check) => check.reason === "no_matching_map_rule_or_wrong_from")).toBe(
+      true
+    );
+  });
+
+  it("sanity check fails when mapped target path does not exist", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "nas-tools-path-map-missing-"));
+    const mappedRoot = join(tempDir, "mapped");
+
+    settings.qbit_path_map = JSON.stringify([{ from: "/remote", to: mappedRoot }]);
+    const qb = await loadQb();
+    (qb as any).getManagedQbitTorrents = async () => [
+      { hash: "h1", name: "Show", content_path: "/remote/missing" },
+    ];
+
+    const result = await qb.sanityCheckPathMap();
+    expect(result.ok).toBe(false);
+    expect(result.summary.failCount).toBe(1);
+    expect(result.checks[0]?.reason).toBe("mapped_path_not_found");
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("sanity check warns when source path is accessible without mapping", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "nas-tools-path-map-warn-"));
+    const directPath = join(tempDir, "shared");
+    mkdirSync(directPath, { recursive: true });
+
+    settings.qbit_path_map = JSON.stringify([]);
+    const qb = await loadQb();
+    (qb as any).getManagedQbitTorrents = async () => [
+      { hash: "h1", name: "Show", content_path: directPath },
+    ];
+
+    const result = await qb.sanityCheckPathMap();
+    expect(result.ok).toBe(true);
+    expect(result.summary.warnCount).toBe(1);
+    expect(result.checks[0]?.reason).toBe("source_path_accessible_without_mapping");
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("sanity check adds warning when no managed torrents are available", async () => {
+    settings.qbit_path_map = JSON.stringify([]);
+    const qb = await loadQb();
+    (qb as any).getManagedQbitTorrents = async () => [];
+
+    const result = await qb.sanityCheckPathMap();
+    expect(result.ok).toBe(true);
+    expect(result.summary.checkedTorrents).toBe(0);
+    expect(result.summary.warnCount).toBe(1);
+    expect(result.checks[0]?.reason).toBe("no_managed_torrents_for_validation");
+  });
+
+  it("sanity check limits torrent validation to 100 entries", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "nas-tools-path-map-limit-"));
+    const basePath = join(tempDir, "shared");
+    mkdirSync(basePath, { recursive: true });
+
+    settings.qbit_path_map = JSON.stringify([]);
+    const qb = await loadQb();
+    (qb as any).getManagedQbitTorrents = async () =>
+      Array.from({ length: 105 }, (_, index) => ({
+        hash: `h${index}`,
+        name: `Show ${index}`,
+        content_path: basePath,
+      }));
+
+    const result = await qb.sanityCheckPathMap();
+    expect(result.summary.checkedTorrents).toBe(100);
+    expect(result.checks.length).toBe(100);
+
+    rmSync(tempDir, { recursive: true, force: true });
   });
 
   it("adds torrent and attaches tag", async () => {

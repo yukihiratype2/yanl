@@ -39,9 +39,22 @@ mock.module(modulePath("../src/services/logger"), loggerMock);
 mock.module("../services/logger", loggerMock);
 
 let qbitTestResponse: any = { ok: true };
+let qbitPathMapSanityResponse: any = {
+  ok: true,
+  message: "Folder map sanity check passed.",
+  summary: {
+    checkedDirs: 1,
+    checkedTorrents: 1,
+    passCount: 2,
+    warnCount: 0,
+    failCount: 0,
+  },
+  checks: [],
+};
 const qbitMock = () => ({
   qbittorrent: {
     testConnection: async () => qbitTestResponse,
+    sanityCheckPathMap: async () => qbitPathMapSanityResponse,
     mapQbitPathToLocal: (path: string) => path,
     getTorrents: async () => [],
     deleteTorrents: async () => true,
@@ -64,6 +77,18 @@ describe("routes/settings", () => {
     aiShouldThrow = false;
     tokenValue = "secret";
     qbitTestResponse = { ok: true };
+    qbitPathMapSanityResponse = {
+      ok: true,
+      message: "Folder map sanity check passed.",
+      summary: {
+        checkedDirs: 1,
+        checkedTorrents: 1,
+        passCount: 2,
+        warnCount: 0,
+        failCount: 0,
+      },
+      checks: [],
+    };
   });
 
   it("returns settings without api_token", async () => {
@@ -100,6 +125,65 @@ describe("routes/settings", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body).toEqual({ ok: true, version: "4.6.0" });
+  });
+
+  it("passes through /test-qbit-path-map result", async () => {
+    qbitPathMapSanityResponse = {
+      ok: true,
+      message: "Folder map sanity check passed.",
+      summary: {
+        checkedDirs: 2,
+        checkedTorrents: 3,
+        passCount: 4,
+        warnCount: 1,
+        failCount: 0,
+      },
+      checks: [
+        {
+          scope: "download_dir",
+          status: "pass",
+          reason: "mapped_path_exists",
+          mediaType: "tv",
+          sourcePath: "/downloads/tv",
+          mappedPath: "/mnt/downloads/tv",
+        },
+      ],
+    };
+
+    const res = await routes.default.request("/test-qbit-path-map", { method: "POST" });
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body).toEqual(qbitPathMapSanityResponse);
+  });
+
+  it("returns failure payload from /test-qbit-path-map", async () => {
+    qbitPathMapSanityResponse = {
+      ok: false,
+      message: "Folder map sanity check failed.",
+      summary: {
+        checkedDirs: 0,
+        checkedTorrents: 0,
+        passCount: 0,
+        warnCount: 0,
+        failCount: 0,
+      },
+      checks: [],
+      error: "qBittorrent login failed",
+    };
+
+    const res = await routes.default.request("/test-qbit-path-map", { method: "POST" });
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(false);
+    expect(body.error).toContain("qBittorrent login failed");
+    expect(body.summary).toEqual({
+      checkedDirs: 0,
+      checkedTorrents: 0,
+      passCount: 0,
+      warnCount: 0,
+      failCount: 0,
+    });
+    expect(body.checks).toEqual([]);
   });
 
   it("tests ai config", async () => {

@@ -1,5 +1,6 @@
 import { getSetting } from "../db/settings";
 import { posix } from "path";
+import { existsSync } from "node:fs";
 import {
   reportIntegrationFailure,
   reportIntegrationSuccess,
@@ -221,6 +222,48 @@ export interface QBitTorrentFile {
   availability: number;
 }
 
+export type PathMapSanityScope = "download_dir" | "torrent";
+export type PathMapSanityStatus = "pass" | "warn" | "fail";
+
+export interface PathMapSanitySummary {
+  checkedDirs: number;
+  checkedTorrents: number;
+  passCount: number;
+  warnCount: number;
+  failCount: number;
+}
+
+export interface PathMapSanityCheck {
+  scope: PathMapSanityScope;
+  status: PathMapSanityStatus;
+  reason: string;
+  mediaType?: "anime" | "tv" | "movie";
+  torrentHash?: string;
+  torrentName?: string;
+  sourcePath: string;
+  mappedPath: string;
+}
+
+export interface PathMapSanityResult {
+  ok: boolean;
+  message: string;
+  summary: PathMapSanitySummary;
+  checks: PathMapSanityCheck[];
+  error?: string;
+}
+
+const PATH_MAP_SANITY_TORRENT_LIMIT = 100;
+
+function createEmptyPathMapSanitySummary(): PathMapSanitySummary {
+  return {
+    checkedDirs: 0,
+    checkedTorrents: 0,
+    passCount: 0,
+    warnCount: 0,
+    failCount: 0,
+  };
+}
+
 export class QbittorrentService {
   private sid: string | null = null;
   private sidBaseUrl: string | null = null;
@@ -324,6 +367,115 @@ export class QbittorrentService {
     }
 
     return path;
+  }
+
+  private evaluatePathMapSanity(sourcePath: string): Pick<
+    PathMapSanityCheck,
+    "status" | "reason" | "mappedPath"
+  > {
+    const mappedPath = this.mapQbitPathToLocal(sourcePath);
+
+    if (mappedPath === sourcePath) {
+      if (existsSync(sourcePath)) {
+        return {
+          status: "warn",
+          reason: "source_path_accessible_without_mapping",
+          mappedPath,
+        };
+      }
+      return {
+        status: "fail",
+        reason: "no_matching_map_rule_or_wrong_from",
+        mappedPath,
+      };
+    }
+
+    if (existsSync(mappedPath)) {
+      return { status: "pass", reason: "mapped_path_exists", mappedPath };
+    }
+
+    return { status: "fail", reason: "mapped_path_not_found", mappedPath };
+  }
+
+  private buildPathMapSanityResult(checks: PathMapSanityCheck[]): PathMapSanityResult {
+    const summary = createEmptyPathMapSanitySummary();
+    summary.checkedDirs = checks.filter((check) => check.scope === "download_dir").length;
+    summary.checkedTorrents = checks.filter(
+      (check) =>
+        check.scope === "torrent" && check.reason !== "no_managed_torrents_for_validation"
+    ).length;
+    summary.passCount = checks.filter((check) => check.status === "pass").length;
+    summary.warnCount = checks.filter((check) => check.status === "warn").length;
+    summary.failCount = checks.filter((check) => check.status === "fail").length;
+
+    const ok = summary.failCount === 0;
+    const message =
+      summary.failCount > 0
+        ? "Folder map check found mismatches."
+        : summary.warnCount > 0
+          ? "Folder map check passed with warnings."
+          : "Folder map sanity check passed.";
+
+    return { ok, message, summary, checks };
+  }
+
+  async sanityCheckPathMap(): Promise<PathMapSanityResult> {
+    let torrents: QBitTorrentInfo[];
+    try {
+      torrents = await this.getManagedQbitTorrents();
+    } catch (error: any) {
+      return {
+        ok: false,
+        message: "Folder map sanity check failed.",
+        summary: createEmptyPathMapSanitySummary(),
+        checks: [],
+        error: error?.message || "Failed to check managed qBittorrent torrents",
+      };
+    }
+
+    const checks: PathMapSanityCheck[] = [];
+    const mediaTypes: Array<"anime" | "tv" | "movie"> = ["anime", "tv", "movie"];
+    for (const mediaType of mediaTypes) {
+      const sourcePath = this.getQbitDownloadDir(mediaType);
+      if (!sourcePath) continue;
+
+      const verdict = this.evaluatePathMapSanity(sourcePath);
+      checks.push({
+        scope: "download_dir",
+        status: verdict.status,
+        reason: verdict.reason,
+        mediaType,
+        sourcePath,
+        mappedPath: verdict.mappedPath,
+      });
+    }
+
+    if (torrents.length === 0) {
+      checks.push({
+        scope: "torrent",
+        status: "warn",
+        reason: "no_managed_torrents_for_validation",
+        sourcePath: "",
+        mappedPath: "",
+      });
+      return this.buildPathMapSanityResult(checks);
+    }
+
+    for (const torrent of torrents.slice(0, PATH_MAP_SANITY_TORRENT_LIMIT)) {
+      const sourcePath = torrent.content_path || "";
+      const verdict = this.evaluatePathMapSanity(sourcePath);
+      checks.push({
+        scope: "torrent",
+        status: verdict.status,
+        reason: verdict.reason,
+        torrentHash: torrent.hash,
+        torrentName: torrent.name,
+        sourcePath,
+        mappedPath: verdict.mappedPath,
+      });
+    }
+
+    return this.buildPathMapSanityResult(checks);
   }
 
   private getBaseUrl(): string {

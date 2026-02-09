@@ -18,6 +18,8 @@ export default function SettingsIntegrationsPage() {
     saving,
     testingQbit,
     qbitStatus,
+    testingPathMapSanity,
+    pathMapSanityStatus,
     testingAI,
     aiStatus,
     saveMessage,
@@ -34,6 +36,7 @@ export default function SettingsIntegrationsPage() {
     updateNotifactions,
     handleSave,
     handleTestQbit,
+    handleTestPathMapSanity,
     handleTestAI,
     handleTokenSave,
   } = useSharedSettingsForm();
@@ -76,6 +79,9 @@ export default function SettingsIntegrationsPage() {
         onTestConnection={handleTestQbit}
         testing={testingQbit}
         status={qbitStatus}
+        onTestPathMapSanity={handleTestPathMapSanity}
+        testingPathMapSanity={testingPathMapSanity}
+        pathMapSanityStatus={pathMapSanityStatus}
       />
       <TmdbSection settings={settings} onChange={handleChange} />
       <AiSection

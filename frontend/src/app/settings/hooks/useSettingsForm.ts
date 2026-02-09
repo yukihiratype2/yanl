@@ -5,9 +5,11 @@ import {
   getSettings,
   updateSettings,
   testQbitConnection,
+  testQbitPathMapSanity,
   testAIConfig,
   getStoredToken,
   setToken as persistToken,
+  type QbitPathMapSanityResult,
 } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import type {
@@ -28,6 +30,22 @@ type PathMapRowError = {
 };
 
 type StatusMessage = { ok: boolean; message: string } | null;
+
+function buildPathMapSanityErrorResult(error: string): QbitPathMapSanityResult {
+  return {
+    ok: false,
+    message: "Folder map sanity check failed.",
+    summary: {
+      checkedDirs: 0,
+      checkedTorrents: 0,
+      passCount: 0,
+      warnCount: 0,
+      failCount: 0,
+    },
+    checks: [],
+    error,
+  };
+}
 
 const NOTIFACTION_EVENT_TYPES: NotifactionEventType[] = [
   "media_released",
@@ -276,6 +294,9 @@ export function useSettingsForm() {
   const [saving, setSaving] = useState(false);
   const [testingQbit, setTestingQbit] = useState(false);
   const [qbitStatus, setQbitStatus] = useState<StatusMessage>(null);
+  const [testingPathMapSanity, setTestingPathMapSanity] = useState(false);
+  const [pathMapSanityStatus, setPathMapSanityStatus] =
+    useState<QbitPathMapSanityResult | null>(null);
   const [testingAI, setTestingAI] = useState(false);
   const [aiStatus, setAiStatus] = useState<StatusMessage>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -438,6 +459,22 @@ export function useSettingsForm() {
     }
   }, []);
 
+  const handleTestPathMapSanity = useCallback(async () => {
+    try {
+      setTestingPathMapSanity(true);
+      const result = await testQbitPathMapSanity();
+      setPathMapSanityStatus(result);
+    } catch (err: unknown) {
+      setPathMapSanityStatus(
+        buildPathMapSanityErrorResult(
+          getErrorMessage(err, "Folder map sanity check failed")
+        )
+      );
+    } finally {
+      setTestingPathMapSanity(false);
+    }
+  }, []);
+
   const handleTokenSave = useCallback(() => {
     persistToken(token);
     void loadSettings();
@@ -451,6 +488,8 @@ export function useSettingsForm() {
     saving,
     testingQbit,
     qbitStatus,
+    testingPathMapSanity,
+    pathMapSanityStatus,
     testingAI,
     aiStatus,
     saveMessage,
@@ -471,6 +510,7 @@ export function useSettingsForm() {
     updateNotifactions,
     handleSave,
     handleTestQbit,
+    handleTestPathMapSanity,
     handleTestAI,
     handleTokenSave,
   };

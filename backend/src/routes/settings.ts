@@ -69,6 +69,12 @@ settingsRoutes.post("/test-qbit", async (c) => {
   return c.json(result);
 });
 
+settingsRoutes.post("/test-qbit-path-map", async (c) => {
+  const { qbittorrent } = await import("../services/qbittorrent");
+  const result = await qbittorrent.sanityCheckPathMap();
+  return c.json(result);
+});
+
 // Test AI configuration
 settingsRoutes.post("/ai/test", async (c) => {
   try {

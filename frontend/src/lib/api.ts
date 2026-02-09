@@ -62,6 +62,40 @@ export async function testQbitConnection(): Promise<{
   return apiFetch("/api/settings/test-qbit", { method: "POST" });
 }
 
+export type QbitPathMapSanityScope = "download_dir" | "torrent";
+export type QbitPathMapSanityStatus = "pass" | "warn" | "fail";
+
+export interface QbitPathMapSanitySummary {
+  checkedDirs: number;
+  checkedTorrents: number;
+  passCount: number;
+  warnCount: number;
+  failCount: number;
+}
+
+export interface QbitPathMapSanityCheck {
+  scope: QbitPathMapSanityScope;
+  status: QbitPathMapSanityStatus;
+  reason: string;
+  mediaType?: "anime" | "tv" | "movie";
+  torrentHash?: string;
+  torrentName?: string;
+  sourcePath: string;
+  mappedPath: string;
+}
+
+export interface QbitPathMapSanityResult {
+  ok: boolean;
+  message: string;
+  summary: QbitPathMapSanitySummary;
+  checks: QbitPathMapSanityCheck[];
+  error?: string;
+}
+
+export async function testQbitPathMapSanity(): Promise<QbitPathMapSanityResult> {
+  return apiFetch("/api/settings/test-qbit-path-map", { method: "POST" });
+}
+
 export async function testAIConfig(): Promise<{ response: string }> {
   return apiFetch("/api/settings/ai/test", { method: "POST" });
 }

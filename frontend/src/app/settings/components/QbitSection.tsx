@@ -10,6 +10,10 @@ import {
 import PathPicker from "@/components/PathPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type {
+  QbitPathMapSanityCheck,
+  QbitPathMapSanityResult,
+} from "@/lib/api";
 import { Field, Section } from "./Section";
 
 type SettingsMap = Record<string, string>;
@@ -39,7 +43,27 @@ type Props = {
   onTestConnection: () => void;
   testing: boolean;
   status: StatusMessage;
+  onTestPathMapSanity: () => void;
+  testingPathMapSanity: boolean;
+  pathMapSanityStatus: QbitPathMapSanityResult | null;
 };
+
+function getPathMapCheckStatusClass(status: QbitPathMapSanityCheck["status"]): string {
+  if (status === "pass") return "text-success";
+  if (status === "warn") return "text-yellow-600";
+  return "text-destructive";
+}
+
+function formatPathMapCheckScope(check: QbitPathMapSanityCheck): string {
+  if (check.scope === "download_dir") {
+    return check.mediaType ? `download_dir:${check.mediaType}` : "download_dir";
+  }
+  return check.torrentName
+    ? `torrent:${check.torrentName}`
+    : check.torrentHash
+      ? `torrent:${check.torrentHash}`
+      : "torrent";
+}
 
 export default function QbitSection({
   settings,
@@ -52,6 +76,9 @@ export default function QbitSection({
   onTestConnection,
   testing,
   status,
+  onTestPathMapSanity,
+  testingPathMapSanity,
+  pathMapSanityStatus,
 }: Props) {
   return (
     <Section title="Download Client (qBittorrent)" icon={<Download className="w-5 h-5" />}>
@@ -176,15 +203,34 @@ export default function QbitSection({
           </Button>
         </div>
       </Field>
-      <Button
-        onClick={onTestConnection}
-        disabled={testing}
-        variant="secondary"
-        className="w-fit"
-      >
-        {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <TestTube className="w-4 h-4" />}
-        Test Connection
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={onTestConnection}
+          disabled={testing}
+          variant="secondary"
+          className="w-fit"
+        >
+          {testing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <TestTube className="w-4 h-4" />
+          )}
+          Test Connection
+        </Button>
+        <Button
+          onClick={onTestPathMapSanity}
+          disabled={testingPathMapSanity}
+          variant="secondary"
+          className="w-fit"
+        >
+          {testingPathMapSanity ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Check className="w-4 h-4" />
+          )}
+          Sanity Check Folder Map
+        </Button>
+      </div>
       {status && (
         <div
           className={`flex items-center gap-2 text-sm ${
@@ -193,6 +239,42 @@ export default function QbitSection({
         >
           {status.ok ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
           {status.message}
+        </div>
+      )}
+      {pathMapSanityStatus && (
+        <div className="space-y-2 rounded-md border p-3 text-sm">
+          <div
+            className={
+              pathMapSanityStatus.ok
+                ? "text-success"
+                : pathMapSanityStatus.error
+                  ? "text-destructive"
+                  : "text-yellow-600"
+            }
+          >
+            {pathMapSanityStatus.message}
+            {pathMapSanityStatus.error ? ` ${pathMapSanityStatus.error}` : ""}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Dirs checked: {pathMapSanityStatus.summary.checkedDirs} | Torrents checked:{" "}
+            {pathMapSanityStatus.summary.checkedTorrents} | Pass:{" "}
+            {pathMapSanityStatus.summary.passCount} | Warn:{" "}
+            {pathMapSanityStatus.summary.warnCount} | Fail:{" "}
+            {pathMapSanityStatus.summary.failCount}
+          </p>
+          {pathMapSanityStatus.checks.length > 0 && (
+            <div className="max-h-56 space-y-2 overflow-auto rounded border p-2 text-xs">
+              {pathMapSanityStatus.checks.map((check, index) => (
+                <div key={`${check.scope}-${check.torrentHash || check.mediaType || index}`}>
+                  <div className={getPathMapCheckStatusClass(check.status)}>
+                    {check.status.toUpperCase()} {formatPathMapCheckScope(check)} {check.reason}
+                  </div>
+                  <div className="text-muted-foreground">source: {check.sourcePath || "-"}</div>
+                  <div className="text-muted-foreground">mapped: {check.mappedPath || "-"}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </Section>
