@@ -1,7 +1,7 @@
 import { Context, Hono } from "hono";
 import { searchTorrents } from "../services/rss";
 import { qbittorrent } from "../services/qbittorrent";
-import { downloadTorrent } from "../usecases/torrents";
+import { downloadTorrent } from "../actions/torrents";
 
 const torrentRoutes = new Hono();
 

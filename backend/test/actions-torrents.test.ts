@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { downloadTorrent } from "../src/usecases/torrents";
+import { downloadTorrent } from "../src/actions/torrents";
 
 const baseDeps = {
   qbittorrent: {
@@ -16,7 +16,7 @@ const baseDeps = {
   },
 };
 
-describe("usecases/torrents", () => {
+describe("actions/torrents", () => {
   it("downloads a torrent and creates record", async () => {
     const res = await downloadTorrent(
       {

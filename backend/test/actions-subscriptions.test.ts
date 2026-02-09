@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-const usecases = await import("../src/usecases/subscriptions?test=usecases-subscriptions");
+const actions = await import("../src/actions/subscriptions?test=actions-subscriptions");
 
 function buildDeps(overrides: Record<string, any> = {}) {
   const createdEpisodes: any[] = [];
@@ -73,10 +73,10 @@ function buildDeps(overrides: Record<string, any> = {}) {
   return { deps, createdEpisodes };
 }
 
-describe("usecases/subscriptions", () => {
+describe("actions/subscriptions", () => {
   it("creates a subscription with episodes", async () => {
     const { deps } = buildDeps();
-    const result = await usecases.createSubscriptionWithEpisodes(
+    const result = await actions.createSubscriptionWithEpisodes(
       { media_type: "tv", source_id: 1 },
       deps as any
     );
@@ -88,7 +88,7 @@ describe("usecases/subscriptions", () => {
 
   it("returns error on invalid source", async () => {
     const { deps } = buildDeps();
-    const result = await usecases.createSubscriptionWithEpisodes(
+    const result = await actions.createSubscriptionWithEpisodes(
       { media_type: "tv", source_id: 1, source: "bad" as any },
       deps as any
     );
@@ -124,7 +124,7 @@ describe("usecases/subscriptions", () => {
       },
     });
 
-    const result = await usecases.createSubscriptionWithEpisodes(
+    const result = await actions.createSubscriptionWithEpisodes(
       { media_type: "tv", source_id: 1 },
       deps as any
     );
@@ -185,7 +185,7 @@ describe("usecases/subscriptions", () => {
       },
     });
 
-    const result = await usecases.createSubscriptionWithEpisodes(
+    const result = await actions.createSubscriptionWithEpisodes(
       { media_type: "tv", source_id: 1, season_number: 1 },
       deps as any
     );
@@ -207,7 +207,7 @@ describe("usecases/subscriptions", () => {
         getEpisodesBySubscription: () => [{ torrent_hash: "def" }],
       },
     };
-    const res = await usecases.deleteSubscriptionWithCleanup(
+    const res = await actions.deleteSubscriptionWithCleanup(
       {
         id: 1,
         media_type: "tv",
