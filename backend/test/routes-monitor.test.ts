@@ -4,6 +4,7 @@ import { modulePath } from "./mockPath";
 const monitorMock = () => ({
   getJobStatuses: () => [{ name: "job" }],
   runJobNow: async (name: string) => name === "job",
+  startMonitor: () => {},
 });
 mock.module(modulePath("../src/services/monitor"), monitorMock);
 mock.module("../services/monitor", monitorMock);

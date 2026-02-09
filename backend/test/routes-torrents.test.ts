@@ -22,29 +22,31 @@ const qbitCalls = {
 };
 
 const qbitMock = () => ({
-  pauseTorrents: async (hashes: string[]) => {
-    qbitCalls.pause.push(hashes);
-    if (qbitShouldFail === "pause") throw new Error("pause failed");
-    return true;
+  qbittorrent: {
+    pauseTorrents: async (hashes: string[]) => {
+      qbitCalls.pause.push(hashes);
+      if (qbitShouldFail === "pause") throw new Error("pause failed");
+      return true;
+    },
+    resumeTorrents: async (hashes: string[]) => {
+      qbitCalls.resume.push(hashes);
+      if (qbitShouldFail === "resume") throw new Error("resume failed");
+      return true;
+    },
+    deleteTorrents: async (hashes: string[], deleteFiles: boolean) => {
+      qbitCalls.delete.push({ hashes, deleteFiles });
+      if (qbitShouldFail === "delete") throw new Error("delete failed");
+      return true;
+    },
+    testConnection: async () => ({ ok: true }),
+    getTorrents: async () => [],
+    mapQbitPathToLocal: (path: string) => path,
+    getManagedQbitTags: () => new Set<string>(),
+    getManagedQbitTorrents: async () => [],
+    hasManagedQbitTag: () => false,
+    isDownloadComplete: () => false,
+    cleanupQbitTorrent: async () => {},
   },
-  resumeTorrents: async (hashes: string[]) => {
-    qbitCalls.resume.push(hashes);
-    if (qbitShouldFail === "resume") throw new Error("resume failed");
-    return true;
-  },
-  deleteTorrents: async (hashes: string[], deleteFiles: boolean) => {
-    qbitCalls.delete.push({ hashes, deleteFiles });
-    if (qbitShouldFail === "delete") throw new Error("delete failed");
-    return true;
-  },
-  testConnection: async () => ({ ok: true }),
-  getTorrents: async () => [],
-  mapQbitPathToLocal: (path: string) => path,
-  getManagedQbitTags: () => new Set<string>(),
-  getManagedQbitTorrents: async () => [],
-  hasManagedQbitTag: () => false,
-  isDownloadComplete: () => false,
-  cleanupQbitTorrent: async () => {},
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);
 mock.module("../services/qbittorrent", qbitMock);

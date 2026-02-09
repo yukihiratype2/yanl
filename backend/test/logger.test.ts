@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from "bun:test";
+import { afterAll, describe, expect, it, mock } from "bun:test";
 import { modulePath } from "./mockPath";
 
 let lastDestinationArg: any = null;
@@ -32,13 +32,13 @@ mock.module("pino", () => ({
   default: pinoMock,
 }));
 
-mock.module("fs", () => ({
-  mkdirSync: () => {},
-}));
-
 mock.module(modulePath("../src/config"), () => ({
   loadConfig: () => ({ log: { dir: "/tmp/log", level: "debug" } }),
 }));
+
+afterAll(() => {
+  mock.restore();
+});
 
 const loggerModule = await import("../src/services/logger?test=logger");
 

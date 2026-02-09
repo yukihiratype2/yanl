@@ -2,7 +2,7 @@ import * as models from "../db/models";
 import * as tmdb from "../services/tmdb";
 import * as bgm from "../services/bgm";
 import * as fileManager from "../services/fileManager";
-import * as qbittorrent from "../services/qbittorrent";
+import { qbittorrent, type QbittorrentService } from "../services/qbittorrent";
 import { logger as baseLogger } from "../services/logger";
 import { err, ok, type Result } from "../lib/result";
 import { normalizeDateOnly } from "../lib/date";
@@ -27,7 +27,7 @@ export type SubscriptionDeps = {
   tmdb: typeof tmdb;
   bgm: typeof bgm;
   fileManager: typeof fileManager;
-  qbittorrent: typeof qbittorrent;
+  qbittorrent: QbittorrentService;
   logger: Logger;
 };
 

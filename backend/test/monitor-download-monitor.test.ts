@@ -48,19 +48,21 @@ mock.module(modulePath("../src/db/models"), modelsMock);
 mock.module("../../db/models", modelsMock);
 
 const qbitMock = () => ({
-  getManagedQbitTags: () => new Set(["nas"]),
-  getManagedQbitTorrents: async () => [
-    {
-      hash: "abc",
-      progress: 1,
-      state: "uploading",
-      content_path: "/downloads/file.mkv",
-      tags: "nas",
-    },
-  ],
-  isDownloadComplete: () => true,
-  cleanupQbitTorrent: async () => {},
-  mapQbitPathToLocal: (path: string) => path,
+  qbittorrent: {
+    getManagedQbitTags: () => new Set(["nas"]),
+    getManagedQbitTorrents: async () => [
+      {
+        hash: "abc",
+        progress: 1,
+        state: "uploading",
+        content_path: "/downloads/file.mkv",
+        tags: "nas",
+      },
+    ],
+    isDownloadComplete: () => true,
+    cleanupQbitTorrent: async () => {},
+    mapQbitPathToLocal: (path: string) => path,
+  },
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);
 mock.module("../qbittorrent", qbitMock);

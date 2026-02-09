@@ -41,8 +41,8 @@ settingsRoutes.get("/token", (c) => {
 
 // Test qBittorrent connection
 settingsRoutes.post("/test-qbit", async (c) => {
-  const { testConnection } = await import("../services/qbittorrent");
-  const result = await testConnection();
+  const { qbittorrent } = await import("../services/qbittorrent");
+  const result = await qbittorrent.testConnection();
   return c.json(result);
 });
 

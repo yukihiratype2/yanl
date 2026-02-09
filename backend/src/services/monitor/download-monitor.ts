@@ -9,7 +9,7 @@ import {
 } from "../../db/models";
 import * as fileManager from "../fileManager";
 import { logger } from "../logger";
-import * as qbittorrent from "../qbittorrent";
+import { qbittorrent } from "../qbittorrent";
 import {
   buildEpisodeFilename,
   buildMovieFilename,

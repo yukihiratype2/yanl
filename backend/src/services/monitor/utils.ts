@@ -1,9 +1,8 @@
-import * as qbittorrent from "../qbittorrent";
 import * as fileManager from "../fileManager";
 import { todayLocalDateOnly } from "../../lib/date";
 
 export type ParsedTitle = import("../rss").RSSItem["ai"];
-export type QbitTorrent = qbittorrent.QBitTorrentInfo;
+export type QbitTorrent = import("../qbittorrent").QBitTorrentInfo;
 
 export function getTodayDateOnly(): string {
   return todayLocalDateOnly();
