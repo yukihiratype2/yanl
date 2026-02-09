@@ -10,6 +10,7 @@ import {
   Clapperboard,
   SlidersHorizontal,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { href: "/", label: "Media List", icon: Tv },
@@ -51,8 +52,9 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-4 border-t border-border text-xs text-muted-foreground">
-        NAS Tools v1.0
+      <div className="p-4 border-t border-border space-y-3">
+        <ThemeToggle />
+        <div className="text-xs text-muted-foreground">NAS Tools v1.0</div>
       </div>
     </aside>
   );

@@ -18,13 +18,30 @@ export const metadata: Metadata = {
   description: "Anime, TV & Movie media management tool",
 };
 
+const themeScript = `
+(() => {
+  const stored = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const theme =
+    stored === "light" || stored === "dark"
+      ? stored
+      : prefersDark
+        ? "dark"
+        : "light";
+  document.documentElement.classList.toggle("dark", theme === "dark");
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
