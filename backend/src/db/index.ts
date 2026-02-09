@@ -135,6 +135,59 @@ function backfillMediaDateColumns() {
   }
 }
 
+function ensureDefaultProfileExists() {
+  const row = db
+    .prepare(
+      "SELECT COUNT(*) AS total, SUM(CASE WHEN is_default = 1 THEN 1 ELSE 0 END) AS defaults_count FROM profiles"
+    )
+    .get() as { total: number; defaults_count: number | null };
+
+  const total = Number(row.total || 0);
+  const defaultsCount = Number(row.defaults_count || 0);
+
+  if (total === 0) {
+    db.prepare(
+      `INSERT INTO profiles (
+         name,
+         description,
+         resolutions,
+         qualities,
+         formats,
+         encoders,
+         min_size_mb,
+         max_size_mb,
+         preferred_keywords,
+         excluded_keywords,
+         is_default
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      "Default",
+      "Default profile with no filtering rules.",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      1
+    );
+    return;
+  }
+
+  if (defaultsCount > 0) return;
+
+  const firstProfile = db
+    .prepare("SELECT id FROM profiles ORDER BY id ASC LIMIT 1")
+    .get() as { id: number } | undefined;
+  if (!firstProfile) return;
+
+  db.prepare(
+    "UPDATE profiles SET is_default = CASE WHEN id = ? THEN 1 ELSE 0 END, updated_at = datetime('now')"
+  ).run(firstProfile.id);
+}
+
 export function initDatabase() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -312,5 +365,6 @@ export function initDatabase() {
   if (process.env.NAS_TOOLS_SKIP_DATE_BACKFILL !== "1") {
     backfillMediaDateColumns();
   }
+  ensureDefaultProfileExists();
   logger.info("Database initialized successfully");
 }

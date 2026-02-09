@@ -30,12 +30,19 @@ describe("db/index", () => {
     expect(names).toContain("episodes");
     expect(names).toContain("torrents");
   });
+
+  it("seeds a default profile on initialization", () => {
+    const profiles = models.getAllProfiles();
+    const seeded = profiles.find((profile) => profile.name === "Default");
+    expect(seeded).toBeDefined();
+    expect(seeded?.is_default).toBe(1);
+  });
 });
 
 describe("db/models", () => {
   it("creates and updates profiles", () => {
     const created = models.createProfile({
-      name: "Default",
+      name: "Default 2",
       description: null,
       resolutions: JSON.stringify(["1080p"]),
       qualities: null,
