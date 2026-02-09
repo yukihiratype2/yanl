@@ -1,3 +1,7 @@
+import {
+  reportIntegrationFailure,
+  reportIntegrationSuccess,
+} from "./integration-health";
 const BGM_BASE_URL = "https://api.bgm.tv/v0";
 
 export interface BGMSubject {
@@ -47,19 +51,25 @@ export interface BGMSearchEpisodesResponse {
 }
 
 async function bgmFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${BGM_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": "nas-tools",
-    },
-    ...options,
-  });
+  try {
+    const response = await fetch(`${BGM_BASE_URL}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "nas-tools",
+      },
+      ...options,
+    });
 
-  if (!response.ok) {
-    throw new Error(`BGM API error: ${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(`BGM API error: ${response.status} ${response.statusText}`);
+    }
+
+    reportIntegrationSuccess("bgm", "Last Bangumi API call succeeded");
+    return response.json() as Promise<T>;
+  } catch (error) {
+    reportIntegrationFailure("bgm", error, "Bangumi API call failed");
+    throw error;
   }
-
-  return response.json() as Promise<T>;
 }
 
 export async function searchSubjects(

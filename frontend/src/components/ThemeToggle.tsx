@@ -35,21 +35,18 @@ function applyTheme(theme: Theme) {
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
 }
 
-function resolveInitialTheme(): Theme {
-  const storedTheme = getStoredTheme();
-  if (storedTheme) {
-    return storedTheme;
-  }
-  if (typeof window !== "undefined") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  }
-  return "light";
-}
-
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(resolveInitialTheme);
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    const storedTheme = getStoredTheme();
+    const initialTheme = storedTheme ?? "system";
+    applyTheme(initialTheme);
+    const frame = window.requestAnimationFrame(() => {
+      setTheme(initialTheme);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     applyTheme(theme);

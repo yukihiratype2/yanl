@@ -1,6 +1,10 @@
 import { XMLParser } from "fast-xml-parser";
 import { parseTorrentTitles, type AITitleParse } from "./ai";
 import { getSetting } from "../db/settings";
+import {
+  reportIntegrationFailure,
+  reportIntegrationSuccess,
+} from "./integration-health";
 import { logger } from "./logger";
 
 export interface RSSItem {
@@ -39,11 +43,14 @@ export async function fetchMikanRSS(keyword: string): Promise<RSSItem[]> {
     const response = await fetch(url);
     if (!response.ok) {
       logger.warn({ status: response.status }, "Mikan RSS fetch failed");
+      reportIntegrationFailure("mikan", `HTTP ${response.status}`, "Mikan RSS call failed");
       return [];
     }
     const xml = await response.text();
+    reportIntegrationSuccess("mikan", "Last Mikan RSS call succeeded");
     return parseRSS(xml, "mikan");
   } catch (error) {
+    reportIntegrationFailure("mikan", error, "Mikan RSS call failed");
     logger.error({ err: error }, "Mikan RSS fetch error");
     return [];
   }
@@ -56,13 +63,66 @@ export async function fetchDmhyRSS(keyword: string): Promise<RSSItem[]> {
     const response = await fetch(url);
     if (!response.ok) {
       logger.warn({ status: response.status }, "DMHY RSS fetch failed");
+      reportIntegrationFailure("dmhy", `HTTP ${response.status}`, "DMHY RSS call failed");
       return [];
     }
     const xml = await response.text();
+    reportIntegrationSuccess("dmhy", "Last DMHY RSS call succeeded");
     return parseRSS(xml, "dmhy");
   } catch (error) {
+    reportIntegrationFailure("dmhy", error, "DMHY RSS call failed");
     logger.error({ err: error }, "DMHY RSS fetch error");
     return [];
+  }
+}
+
+export async function testMikanRSSConnection(): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const url = "https://mikanani.me/RSS/Bangumi";
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      reportIntegrationFailure("mikan", `HTTP ${response.status}`, "Mikan RSS call failed");
+      return { ok: false, error: `HTTP ${response.status}` };
+    }
+    const xml = await response.text();
+    const items = parseRSS(xml, "mikan");
+    if (items.length === 0) {
+      reportIntegrationFailure("mikan", "No feed items returned", "Mikan RSS call failed");
+      return { ok: false, error: "No feed items returned" };
+    }
+    reportIntegrationSuccess("mikan", "Last Mikan RSS call succeeded");
+    return { ok: true };
+  } catch (error: any) {
+    reportIntegrationFailure("mikan", error, "Mikan RSS call failed");
+    return { ok: false, error: error?.message || "Mikan RSS connection failed" };
+  }
+}
+
+export async function testDmhyRSSConnection(): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const url = "https://share.dmhy.org/topics/rss/rss.xml";
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      reportIntegrationFailure("dmhy", `HTTP ${response.status}`, "DMHY RSS call failed");
+      return { ok: false, error: `HTTP ${response.status}` };
+    }
+    const xml = await response.text();
+    const items = parseRSS(xml, "dmhy");
+    if (items.length === 0) {
+      reportIntegrationFailure("dmhy", "No feed items returned", "DMHY RSS call failed");
+      return { ok: false, error: "No feed items returned" };
+    }
+    reportIntegrationSuccess("dmhy", "Last DMHY RSS call succeeded");
+    return { ok: true };
+  } catch (error: any) {
+    reportIntegrationFailure("dmhy", error, "DMHY RSS call failed");
+    return { ok: false, error: error?.message || "DMHY RSS connection failed" };
   }
 }
 

@@ -2,7 +2,6 @@ import { describe, expect, it, mock } from "bun:test";
 import { modulePath } from "./mockPath";
 
 process.env.NAS_TOOLS_DB_PATH = ":memory:";
-process.env.NAS_TOOLS_SKIP_DATE_BACKFILL = "1";
 
 const monitorMock = () => ({
   startMonitor: () => {},
@@ -12,12 +11,15 @@ const monitorMock = () => ({
 mock.module(modulePath("../src/services/monitor"), monitorMock);
 mock.module("../services/monitor", monitorMock);
 
-mock.module(modulePath("../src/db"), () => ({
-  initDatabase: () => {},
-}));
-mock.module("../db", () => ({
-  initDatabase: () => {},
-}));
+const integrationHealthMock = () => ({
+  startIntegrationHealthMonitor: () => {},
+  getIntegrationStatuses: () => [],
+  runIntegrationCheck: async () => ({ ok: false, reason: "not_found" as const }),
+  reportIntegrationSuccess: () => {},
+  reportIntegrationFailure: () => {},
+});
+mock.module(modulePath("../src/services/integration-health"), integrationHealthMock);
+mock.module("../services/integration-health", integrationHealthMock);
 
 const settingsMock = () => ({
   getSetting: () => "token",

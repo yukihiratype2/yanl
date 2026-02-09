@@ -1,7 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Activity, AlertTriangle, Clock3, ListChecks } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  ListChecks,
+  PlugZap,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ServicesSummaryMetrics } from "../types";
 import { formatDateTime } from "../utils/format";
@@ -49,33 +56,49 @@ function MetricCard({
 }
 
 export default function ServicesSummaryCards({ metrics }: Props) {
-  const nextDueSubvalue = metrics.nextDueAt
-    ? formatDateTime(metrics.nextDueAt)
-    : "No upcoming run";
+  const nextActivitySubvalue = metrics.nextActivityAt
+    ? formatDateTime(metrics.nextActivityAt)
+    : "No upcoming scheduled activity";
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <MetricCard
-        label="Total Jobs"
+        label="Jobs Total"
         value={String(metrics.totalJobs)}
         icon={<ListChecks className="h-4 w-4" />}
       />
       <MetricCard
-        label="Running"
+        label="Jobs Running"
         value={String(metrics.runningJobs)}
         icon={<Activity className="h-4 w-4" />}
         tone={metrics.runningJobs > 0 ? "success" : "default"}
       />
       <MetricCard
-        label="Needs Attention"
-        value={String(metrics.needsAttention)}
+        label="Jobs Needing Attention"
+        value={String(metrics.jobsNeedingAttention)}
         icon={<AlertTriangle className="h-4 w-4" />}
-        tone={metrics.needsAttention > 0 ? "danger" : "success"}
+        tone={metrics.jobsNeedingAttention > 0 ? "danger" : "success"}
       />
       <MetricCard
-        label="Next Due"
-        value={metrics.nextDueLabel}
-        subvalue={nextDueSubvalue}
+        label="Integrations Healthy"
+        value={`${metrics.integrationsHealthy}/${metrics.integrationsTotal}`}
+        icon={<CheckCircle2 className="h-4 w-4" />}
+        tone={
+          metrics.integrationsHealthy === metrics.integrationsTotal
+            ? "success"
+            : "default"
+        }
+      />
+      <MetricCard
+        label="Integrations Needing Attention"
+        value={String(metrics.integrationsNeedingAttention)}
+        icon={<PlugZap className="h-4 w-4" />}
+        tone={metrics.integrationsNeedingAttention > 0 ? "danger" : "success"}
+      />
+      <MetricCard
+        label="Next Scheduled Activity"
+        value={metrics.nextActivityLabel}
+        subvalue={nextActivitySubvalue}
         icon={<Clock3 className="h-4 w-4" />}
       />
     </div>

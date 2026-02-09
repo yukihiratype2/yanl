@@ -3,11 +3,12 @@ export type IntegrationKey =
   | "ai"
   | "tmdb"
   | "bgm"
+  | "mikan"
+  | "dmhy"
   | "notifaction";
 
 export type IntegrationHealth =
-  | "unknown"
-  | "not_configured"
+  | "not_used"
   | "testing"
   | "ok"
   | "error";
@@ -27,26 +28,13 @@ export interface IntegrationStatusState {
   loading: boolean;
 }
 
-export interface BulkRunResult {
-  name: string;
-  description: string;
-  ok: boolean;
-  message: string;
-}
-
-export interface BulkRunState {
-  running: boolean;
-  startedAt: string | null;
-  finishedAt: string | null;
-  currentJob: string | null;
-  results: BulkRunResult[];
-  summary: string | null;
-}
-
 export interface ServicesSummaryMetrics {
   totalJobs: number;
   runningJobs: number;
-  needsAttention: number;
-  nextDueAt: string | null;
-  nextDueLabel: string;
+  jobsNeedingAttention: number;
+  integrationsHealthy: number;
+  integrationsTotal: number;
+  integrationsNeedingAttention: number;
+  nextActivityAt: string | null;
+  nextActivityLabel: string;
 }

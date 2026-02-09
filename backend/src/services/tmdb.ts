@@ -1,4 +1,8 @@
 import { getSetting } from "../db/settings";
+import {
+  reportIntegrationFailure,
+  reportIntegrationSuccess,
+} from "./integration-health";
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -84,26 +88,32 @@ function getToken(): string {
 }
 
 async function tmdbFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
-  const token = getToken();
-  const url = new URL(`${TMDB_BASE_URL}${path}`);
-  if (params) {
-    for (const [key, value] of Object.entries(params)) {
-      url.searchParams.set(key, value);
+  try {
+    const token = getToken();
+    const url = new URL(`${TMDB_BASE_URL}${path}`);
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        url.searchParams.set(key, value);
+      }
     }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+    }
+
+    reportIntegrationSuccess("tmdb", "Last TMDB API call succeeded");
+    return response.json() as Promise<T>;
+  } catch (error) {
+    reportIntegrationFailure("tmdb", error, "TMDB API call failed");
+    throw error;
   }
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json() as Promise<T>;
 }
 
 export async function searchMulti(query: string, page = 1): Promise<TMDBSearchResponse> {

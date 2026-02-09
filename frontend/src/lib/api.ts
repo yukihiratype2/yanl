@@ -364,6 +364,52 @@ export async function runMonitorJob(name: string): Promise<{ success: boolean; m
   });
 }
 
+// ---- Integrations ----
+
+export type IntegrationKey =
+  | "qbit"
+  | "ai"
+  | "tmdb"
+  | "bgm"
+  | "mikan"
+  | "dmhy"
+  | "notifaction";
+
+export type IntegrationHealth =
+  | "not_used"
+  | "testing"
+  | "ok"
+  | "error";
+
+export interface IntegrationStatus {
+  key: IntegrationKey;
+  label: string;
+  category: string;
+  description: string;
+  configured: boolean;
+  testSupported: boolean;
+  status: IntegrationHealth;
+  message: string | null;
+  checkedAt: string | null;
+  running: boolean;
+  schedule: string;
+  nextCheckAt: string | null;
+}
+
+export async function getIntegrationStatuses(): Promise<{
+  integrations: IntegrationStatus[];
+}> {
+  return apiFetch("/api/integrations/status");
+}
+
+export async function testIntegration(
+  key: IntegrationKey
+): Promise<{ success: boolean; status: IntegrationStatus }> {
+  return apiFetch(`/api/integrations/${encodeURIComponent(key)}/test`, {
+    method: "POST",
+  });
+}
+
 // ---- Profiles ----
 
 export interface Profile {

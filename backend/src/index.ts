@@ -9,10 +9,12 @@ import subscriptionRoutes from "./routes/subscriptions";
 import torrentRoutes from "./routes/torrents";
 import calendarRoutes from "./routes/calendar";
 import monitorRoutes from "./routes/monitor";
+import integrationsRoutes from "./routes/integrations";
 import profileRoutes from "./routes/profiles";
 import { registerMcpRoutes } from "./mcp/router";
 import { getSetting } from "./db/settings";
 import { startMonitor } from "./services/monitor";
+import { startIntegrationHealthMonitor } from "./services/integration-health";
 import { logger } from "./services/logger";
 
 // Initialize database
@@ -20,6 +22,7 @@ initDatabase();
 
 // Start background monitor
 startMonitor();
+startIntegrationHealthMonitor();
 
 const app = new Hono();
 
@@ -47,6 +50,7 @@ app.route("/api/subscriptions", subscriptionRoutes);
 app.route("/api/torrents", torrentRoutes);
 app.route("/api/calendar", calendarRoutes);
 app.route("/api/monitor", monitorRoutes);
+app.route("/api/integrations", integrationsRoutes);
 app.route("/api/profiles", profileRoutes);
 registerMcpRoutes(app);
 

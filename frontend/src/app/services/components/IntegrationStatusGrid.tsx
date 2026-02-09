@@ -9,6 +9,7 @@ import {
   Film,
   Loader2,
   PlugZap,
+  Rss,
   Tv,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ import { formatDateTime, formatRelativeTime } from "../utils/format";
 type Props = {
   integrations: IntegrationStatusState[];
   onTest: (key: IntegrationKey) => void;
+  loading?: boolean;
   disabled?: boolean;
 };
 
@@ -49,14 +51,14 @@ function statusMeta(status: IntegrationStatusState["status"]): {
         label: "Testing",
         className: "border-primary/40 bg-primary/10 text-primary",
       };
-    case "not_configured":
+    case "not_used":
       return {
-        label: "Not configured",
-        className: "border-warning/40 bg-warning/10 text-warning",
+        label: "Not used",
+        className: "border-border bg-muted/40 text-muted-foreground",
       };
     default:
       return {
-        label: "Pending",
+        label: "Unknown",
         className: "border-border bg-muted/40 text-muted-foreground",
       };
   }
@@ -72,6 +74,9 @@ function integrationIcon(key: IntegrationKey) {
       return <Film className="h-4 w-4" />;
     case "bgm":
       return <Tv className="h-4 w-4" />;
+    case "mikan":
+    case "dmhy":
+      return <Rss className="h-4 w-4" />;
     case "notifaction":
       return <Bell className="h-4 w-4" />;
     default:
@@ -82,6 +87,7 @@ function integrationIcon(key: IntegrationKey) {
 export default function IntegrationStatusGrid({
   integrations,
   onTest,
+  loading = false,
   disabled = false,
 }: Props) {
   return (
@@ -91,7 +97,7 @@ export default function IntegrationStatusGrid({
           <div>
             <CardTitle className="text-base">Integration Health</CardTitle>
             <CardDescription className="mt-1">
-              Backend-driven continuous monitoring with manual test triggers.
+              Passive backend monitoring from real integration usage.
             </CardDescription>
           </div>
           <Button asChild variant="secondary" size="sm">
@@ -103,93 +109,104 @@ export default function IntegrationStatusGrid({
         </div>
       </CardHeader>
       <CardContent className="py-5">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {integrations.map((integration) => {
+        {loading && integrations.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : integrations.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No integrations available.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {integrations.map((integration) => {
             const badge = statusMeta(integration.status);
             const checkedAtLabel = integration.checkedAt
               ? `Last checked ${formatRelativeTime(integration.checkedAt)}`
-              : integration.configured
-                ? "Waiting for first health check"
-                : "Configure in Settings";
+              : "Not used yet";
             const nextCheckLabel = integration.nextCheckAt
               ? `Next check ${formatRelativeTime(integration.nextCheckAt)}`
-              : "No next check scheduled";
+              : "Passive monitor (on usage)";
             const message =
               integration.message ||
-              (integration.configured ? "No status yet" : "Not configured");
+              "No calls yet";
 
-            return (
-              <div
-                key={integration.key}
-                className="rounded-lg border border-border bg-background p-4"
-              >
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    {integrationIcon(integration.key)}
-                    {integration.label}
-                  </div>
-                  <Badge variant="outline" className={badge.className}>
-                    {badge.label}
-                  </Badge>
-                </div>
-
-                <p className="text-xs text-muted-foreground">{integration.description}</p>
-                <p
-                  className={`mt-2 text-sm ${
-                    integration.status === "error"
-                      ? "text-destructive"
-                      : integration.status === "not_configured"
-                        ? "text-warning"
-                        : "text-foreground"
-                  }`}
+              return (
+                <div
+                  key={integration.key}
+                  className="rounded-lg border border-border bg-background p-4"
                 >
-                  {message}
-                </p>
-
-                <div className="mt-3 space-y-1">
-                  <p
-                    className="text-xs text-muted-foreground"
-                    title={
-                      integration.checkedAt
-                        ? formatDateTime(integration.checkedAt)
-                        : undefined
-                    }
-                  >
-                    {checkedAtLabel}
-                  </p>
-                  <p
-                    className="text-xs text-muted-foreground"
-                    title={
-                      integration.nextCheckAt
-                        ? formatDateTime(integration.nextCheckAt)
-                        : integration.schedule
-                    }
-                  >
-                    {nextCheckLabel}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Schedule: {integration.schedule}</p>
-                </div>
-
-                {integration.testSupported && (
-                  <div className="mt-3 flex justify-end">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="h-7 gap-1.5 px-2 text-xs"
-                      disabled={disabled || integration.loading || integration.running}
-                      onClick={() => onTest(integration.key)}
-                    >
-                      {integration.loading || integration.running ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : null}
-                      {integration.loading || integration.running ? "Testing..." : "Test now"}
-                    </Button>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      {integrationIcon(integration.key)}
+                      {integration.label}
+                    </div>
+                    <Badge variant="outline" className={badge.className}>
+                      {badge.label}
+                    </Badge>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+
+                  <p className="text-xs text-muted-foreground">{integration.description}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {integration.configured ? "Configured" : "Not configured"}
+                  </p>
+                  <p
+                    className={`mt-2 text-sm ${
+                      integration.status === "error"
+                        ? "text-destructive"
+                        : integration.status === "not_used"
+                          ? "text-muted-foreground"
+                          : "text-foreground"
+                    }`}
+                  >
+                    {message}
+                  </p>
+
+                  <div className="mt-3 space-y-1">
+                    <p
+                      className="text-xs text-muted-foreground"
+                      title={
+                        integration.checkedAt
+                          ? formatDateTime(integration.checkedAt)
+                          : undefined
+                      }
+                    >
+                      {checkedAtLabel}
+                    </p>
+                    <p
+                      className="text-xs text-muted-foreground"
+                      title={
+                        integration.nextCheckAt
+                          ? formatDateTime(integration.nextCheckAt)
+                          : integration.schedule
+                      }
+                    >
+                      {nextCheckLabel}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Schedule: {integration.schedule}</p>
+                  </div>
+
+                  {integration.testSupported && (
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-7 gap-1.5 px-2 text-xs"
+                        disabled={disabled || integration.loading || integration.running}
+                        onClick={() => onTest(integration.key)}
+                      >
+                        {integration.loading || integration.running ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : null}
+                        {integration.loading || integration.running ? "Testing..." : "Test now"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

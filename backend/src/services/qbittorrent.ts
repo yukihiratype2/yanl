@@ -1,5 +1,9 @@
 import { normalize } from "path";
 import { getSetting } from "../db/settings";
+import {
+  reportIntegrationFailure,
+  reportIntegrationSuccess,
+} from "./integration-health";
 import { logger } from "./logger";
 
 export interface QbitPathMapEntry {
@@ -339,6 +343,7 @@ export class QbittorrentService {
         { path: "/api/v2/auth/login", method: "POST", err },
         "qBittorrent request failed"
       );
+      reportIntegrationFailure("qbit", err, "qBittorrent login request failed");
       throw err;
     }
 
@@ -407,12 +412,23 @@ export class QbittorrentService {
     path: string,
     options: RequestInit = {}
   ): Promise<Response> {
-    const baseUrl = this.getBaseUrl();
+    let baseUrl: string;
+    try {
+      baseUrl = this.getBaseUrl();
+    } catch (error) {
+      reportIntegrationFailure("qbit", error, "qBittorrent URL not configured");
+      throw error;
+    }
     if (this.sidBaseUrl && this.sidBaseUrl !== baseUrl) {
       this.sid = null;
       this.sidBaseUrl = null;
     }
-    await this.ensureLoggedIn(baseUrl);
+    try {
+      await this.ensureLoggedIn(baseUrl);
+    } catch (error) {
+      reportIntegrationFailure("qbit", error, "qBittorrent login failed");
+      throw error;
+    }
 
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
@@ -433,6 +449,7 @@ export class QbittorrentService {
       });
     } catch (err) {
       logger.error({ path, method, err }, "qBittorrent request failed");
+      reportIntegrationFailure("qbit", err, "qBittorrent request failed");
       throw err;
     }
 
@@ -458,6 +475,7 @@ export class QbittorrentService {
         });
       } catch (err) {
         logger.error({ path, method, err }, "qBittorrent retry failed");
+        reportIntegrationFailure("qbit", err, "qBittorrent retry failed");
         throw err;
       }
     }
@@ -465,6 +483,13 @@ export class QbittorrentService {
     logger.info({ path, method, status: response.status }, "qBittorrent API response");
     if (!response.ok) {
       logger.error({ path, method, status: response.status }, "qBittorrent API error");
+      reportIntegrationFailure(
+        "qbit",
+        `HTTP ${response.status}`,
+        `qBittorrent API error: HTTP ${response.status}`
+      );
+    } else {
+      reportIntegrationSuccess("qbit", "Last qBittorrent API call succeeded");
     }
     return response;
   }

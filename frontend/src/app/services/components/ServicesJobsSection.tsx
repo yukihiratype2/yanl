@@ -26,8 +26,6 @@ type Props = {
   jobs: JobStatus[];
   loading: boolean;
   runningJobs: Set<string>;
-  bulkRunning: boolean;
-  bulkCurrentJob: string | null;
   onRefresh: () => void;
   onRunJob: (name: string) => void;
 };
@@ -71,19 +69,14 @@ function jobStatusMeta(job: JobStatus, isRunning: boolean): {
 function JobCard({
   job,
   isRunning,
-  bulkRunning,
-  bulkCurrentJob,
   onRun,
 }: {
   job: JobStatus;
   isRunning: boolean;
-  bulkRunning: boolean;
-  bulkCurrentJob: string | null;
   onRun: () => void;
 }) {
   const status = jobStatusMeta(job, isRunning);
-  const runDisabled = isRunning || bulkRunning;
-  const isCurrentBatch = bulkRunning && bulkCurrentJob === job.name;
+  const runDisabled = isRunning;
 
   return (
     <div className="rounded-lg border border-border bg-background p-4">
@@ -98,14 +91,6 @@ function JobCard({
               {status.icon}
               {status.label}
             </Badge>
-            {isCurrentBatch && (
-              <Badge
-                variant="outline"
-                className="border-primary/40 bg-primary/10 text-primary"
-              >
-                Batch
-              </Badge>
-            )}
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -167,11 +152,23 @@ export default function ServicesJobsSection({
   jobs,
   loading,
   runningJobs,
-  bulkRunning,
-  bulkCurrentJob,
   onRefresh,
   onRunJob,
 }: Props) {
+  const sortedJobs = [...jobs].sort((a, b) => {
+    const aRunning = a.running || runningJobs.has(a.name);
+    const bRunning = b.running || runningJobs.has(b.name);
+
+    const rank = (job: JobStatus, running: boolean) => {
+      if (running) return 0;
+      if (job.lastRunError) return 1;
+      if (!job.lastRunAt) return 2;
+      return 3;
+    };
+
+    return rank(a, aRunning) - rank(b, bRunning);
+  });
+
   return (
     <Card className="py-0">
       <CardHeader className="gap-0 border-b py-4">
@@ -198,12 +195,6 @@ export default function ServicesJobsSection({
           </Button>
         </div>
 
-        {bulkRunning && (
-          <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Running batch trigger...
-          </p>
-        )}
       </CardHeader>
 
       <CardContent className="py-5">
@@ -213,17 +204,15 @@ export default function ServicesJobsSection({
           </div>
         ) : jobs.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
-            No jobs found.
+            No monitor jobs registered.
           </p>
         ) : (
           <div className="space-y-3">
-            {jobs.map((job) => (
+            {sortedJobs.map((job) => (
               <JobCard
                 key={job.name}
                 job={job}
                 isRunning={job.running || runningJobs.has(job.name)}
-                bulkRunning={bulkRunning}
-                bulkCurrentJob={bulkCurrentJob}
                 onRun={() => onRunJob(job.name)}
               />
             ))}

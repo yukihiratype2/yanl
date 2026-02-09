@@ -1,4 +1,8 @@
 import { loadConfig } from "../config";
+import {
+  reportIntegrationFailure,
+  reportIntegrationSuccess,
+} from "./integration-health";
 import { logger } from "./logger";
 
 const CHAT_COMPLETIONS_PATH = "/chat/completions";
@@ -30,25 +34,31 @@ async function callChatCompletion(
   temperature: number
 ): Promise<string | null> {
   const endpoint = buildChatEndpoint(configUrl);
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiToken}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-    }),
-  });
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiToken}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error(`AI API failed: ${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(`AI API failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    reportIntegrationSuccess("ai", "Last AI API call succeeded");
+    return data.choices?.[0]?.message?.content?.trim() ?? null;
+  } catch (error) {
+    reportIntegrationFailure("ai", error, "AI API call failed");
+    throw error;
   }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() ?? null;
 }
 
 export async function testAIConfig(): Promise<string | null> {

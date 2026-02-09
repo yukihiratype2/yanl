@@ -3,6 +3,10 @@ import {
   type NotifactionConfig,
   type NotifactionEventType,
 } from "../config";
+import {
+  reportIntegrationFailure,
+  reportIntegrationSuccess,
+} from "./integration-health";
 import { logger } from "./logger";
 
 const DELIVERY_TIMEOUT_MS = 10_000;
@@ -166,6 +170,28 @@ export function emitNotifactionEvent(event: NotifactionEventPayload): void {
         dispatchNotifaction(notifaction, deliveredEvent)
       )
     );
+
+    const failed = results.filter((result) => result.status === "rejected");
+    if (failed.length > 0) {
+      const reasons = failed
+        .slice(0, 2)
+        .map((result) =>
+          result.status === "rejected"
+            ? (result.reason instanceof Error ? result.reason.message : String(result.reason))
+            : ""
+        )
+        .filter(Boolean);
+      reportIntegrationFailure(
+        "notifaction",
+        reasons.join("; "),
+        `Notification delivery failed (${failed.length}/${results.length})`
+      );
+    } else {
+      reportIntegrationSuccess(
+        "notifaction",
+        `Last notification delivery succeeded (${results.length}/${results.length})`
+      );
+    }
 
     for (const [index, result] of results.entries()) {
       const notifaction = notifactions[index];
