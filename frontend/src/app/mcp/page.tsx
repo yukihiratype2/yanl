@@ -20,6 +20,10 @@ const tools = [
   "create_subscription",
   "update_subscription_status",
   "delete_subscription",
+  "search_media",
+  "get_media_detail",
+  "list_subscription_download_status",
+  "get_subscription_download_status",
 ];
 
 export default function McpPage() {
@@ -108,6 +112,8 @@ Transport: Streamable HTTP`}
               <li>Add the MCP server URL (`/mcp`) in your MCP-compatible client.</li>
               <li>Configure `Authorization` header if the client is outside LAN.</li>
               <li>Run a tool listing call and verify the tools shown above are returned.</li>
+              <li>Use `search_media` → `get_media_detail` → `create_subscription` for AI-driven subscribe flow.</li>
+              <li>Use `list_subscription_download_status` and `get_subscription_download_status` to track ready/missing episodes.</li>
             </ol>
           </CardContent>
         </Card>
