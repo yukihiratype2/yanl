@@ -56,7 +56,7 @@ const modelsMock = () => ({
 mock.module(modulePath("../src/db/models"), modelsMock);
 mock.module("../db/models", modelsMock);
 
-const usecasesMock = () => ({
+const actionsMock = () => ({
   createSubscriptionWithEpisodes: async (payload: any) => {
     createCalls.push(payload);
     return { ok: true, data: { id: 55, ...payload } };
@@ -66,8 +66,8 @@ const usecasesMock = () => ({
     return { ok: true, data: { success: true } };
   },
 });
-mock.module(modulePath("../src/usecases/subscriptions"), usecasesMock);
-mock.module("../usecases/subscriptions", usecasesMock);
+mock.module(modulePath("../src/actions/subscriptions"), actionsMock);
+mock.module("../actions/subscriptions", actionsMock);
 
 await import("../src/mcp/router?test=mcp-router");
 

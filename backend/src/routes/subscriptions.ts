@@ -10,7 +10,7 @@ import {
 import {
   createSubscriptionWithEpisodes,
   deleteSubscriptionWithCleanup,
-} from "../usecases/subscriptions";
+} from "../actions/subscriptions";
 
 const subscriptionRoutes = new Hono();
 

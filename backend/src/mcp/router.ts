@@ -16,7 +16,7 @@ import {
 import {
   createSubscriptionWithEpisodes,
   deleteSubscriptionWithCleanup,
-} from "../usecases/subscriptions";
+} from "../actions/subscriptions";
 
 const server = new Server(
   { name: "nas-tools", version: "1.0.0" },

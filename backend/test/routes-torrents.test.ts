@@ -54,15 +54,15 @@ mock.module("../services/qbittorrent", qbitMock);
 const downloadCalls: any[] = [];
 let downloadShouldFail = false;
 
-const usecasesMock = () => ({
+const actionsMock = () => ({
   downloadTorrent: async (payload: any) => {
     downloadCalls.push(payload);
     if (downloadShouldFail) return { ok: false, error: "bad request", status: 422 };
     return { ok: true, data: { id: 1 } };
   },
 });
-mock.module(modulePath("../src/usecases/torrents"), usecasesMock);
-mock.module("../usecases/torrents", usecasesMock);
+mock.module(modulePath("../src/actions/torrents"), actionsMock);
+mock.module("../actions/torrents", actionsMock);
 
 const routes = await import("../src/routes/torrents?test=routes-torrents");
 

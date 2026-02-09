@@ -36,7 +36,7 @@ const modelsMock = () => ({
 mock.module(modulePath("../src/db/models"), modelsMock);
 mock.module("../db/models", modelsMock);
 
-const usecasesMock = () => ({
+const actionsMock = () => ({
   createSubscriptionWithEpisodes: async (payload: any) => {
     createCalls.push(payload);
     if (createShouldFail) {
@@ -52,8 +52,8 @@ const usecasesMock = () => ({
     return { ok: true, data: { success: true } };
   },
 });
-mock.module(modulePath("../src/usecases/subscriptions"), usecasesMock);
-mock.module("../usecases/subscriptions", usecasesMock);
+mock.module(modulePath("../src/actions/subscriptions"), actionsMock);
+mock.module("../actions/subscriptions", actionsMock);
 
 const routes = await import("../src/routes/subscriptions?test=routes-subscriptions");
 
