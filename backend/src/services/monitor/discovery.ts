@@ -7,7 +7,7 @@ import {
 import * as tmdb from "../tmdb";
 import * as bgm from "../bgm";
 import { logger } from "../logger";
-import { getTodayISO } from "./utils";
+import { getTodayISO, parseIsoLikeDate } from "./utils";
 
 export async function checkNewEpisodes() {
   const subscriptions = getActiveSubscriptions();
@@ -113,13 +113,18 @@ async function processBgmSubscription(sub: Subscription) {
   const existingEpisodes = getEpisodesBySubscription(sub.id);
   const existingEpMap = new Set(existingEpisodes.map((e) => e.episode_number));
   const today = getTodayISO();
+  const todayDate = parseIsoLikeDate(today);
 
   for (const ep of episodes) {
     const numberRaw = ep.ep ?? ep.sort;
     const episodeNumber = Number(numberRaw);
     if (!Number.isInteger(episodeNumber) || episodeNumber <= 0) continue;
     if (existingEpMap.has(episodeNumber)) continue;
-    if (!ep.airdate || ep.airdate > today) continue;
+    if (!ep.airdate) continue;
+    const airDate = parseIsoLikeDate(ep.airdate);
+    if (!airDate || !todayDate || airDate.getTime() > todayDate.getTime()) {
+      continue;
+    }
 
     createEpisode({
       subscription_id: sub.id,
