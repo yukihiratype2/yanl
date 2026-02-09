@@ -1,6 +1,7 @@
 import { readdir } from "fs/promises";
 import { resolve } from "path";
 import type { NextRequest } from "next/server";
+import { getErrorMessage } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
@@ -25,9 +26,9 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return Response.json({ path: resolved, dirs });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return Response.json(
-      { error: err?.message || "Failed to read directory" },
+      { error: getErrorMessage(err, "Failed to read directory") },
       { status: 400 }
     );
   }

@@ -24,6 +24,7 @@ import {
   type Profile,
   type ProfileInput,
 } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 
 const RESOLUTION_OPTIONS = ["2160p", "1080p", "720p", "480p"];
 const QUALITY_OPTIONS = ["bluray", "remux", "webdl", "webrip", "hdtv", "dvdrip", "cam"];
@@ -180,8 +181,8 @@ export default function ProfilesPage() {
       setLoading(true);
       const data = await getProfiles();
       setProfiles(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to load profiles"));
     } finally {
       setLoading(false);
     }
@@ -223,8 +224,8 @@ export default function ProfilesPage() {
       }
       closeForm();
       await loadProfiles();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to save profile"));
     } finally {
       setSaving(false);
     }
@@ -235,8 +236,8 @@ export default function ProfilesPage() {
       await deleteProfile(id);
       setDeleteConfirm(null);
       await loadProfiles();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to delete profile"));
     }
   }
 
@@ -245,8 +246,8 @@ export default function ProfilesPage() {
       setSettingDefaultId(id);
       await updateProfile(id, { is_default: true });
       await loadProfiles();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to set default profile"));
     } finally {
       setSettingDefaultId(null);
     }

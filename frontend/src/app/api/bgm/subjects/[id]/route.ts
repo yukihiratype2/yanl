@@ -1,5 +1,6 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+import { getErrorMessage } from "@/lib/errors";
 
 const BGM_SUBJECT_BASE = "https://api.bgm.tv/v0/subjects";
 
@@ -31,9 +32,9 @@ export async function GET(
 
     const data = await response.json();
     return Response.json(data);
-  } catch (err: any) {
+  } catch (err: unknown) {
     return Response.json(
-      { error: err?.message || "Failed to fetch BGM subject" },
+      { error: getErrorMessage(err, "Failed to fetch BGM subject") },
       { status: 500 }
     );
   }

@@ -12,6 +12,7 @@ import {
   type SearchResult,
   type TMDBTVDetail,
 } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 
 type SearchModalProps = {
   onClose: () => void;
@@ -80,7 +81,7 @@ export default function SearchModal({ onClose }: SearchModalProps) {
       } else {
         setResults(res.results);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
     } finally {
       setSearching(false);
@@ -108,8 +109,8 @@ export default function SearchModal({ onClose }: SearchModalProps) {
         setSubscribeDetail(null);
         onClose();
       }
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to subscribe"));
     } finally {
       setSubscribing(null);
     }
@@ -134,9 +135,9 @@ export default function SearchModal({ onClose }: SearchModalProps) {
         const defaultSeason = seasons[0]?.season_number ?? 1;
         setSelectedSeason(seasons.length > 1 ? "all" : String(defaultSeason));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || "Failed to load details");
+      alert(getErrorMessage(err, "Failed to load details"));
       setSubscribeTarget(null);
       setSubscribeDetail(null);
     } finally {

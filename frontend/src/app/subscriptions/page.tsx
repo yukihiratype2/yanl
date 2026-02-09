@@ -8,6 +8,7 @@ import {
   updateSubscription,
   type Subscription,
 } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 import DeleteModal from "./components/DeleteModal";
 import SearchModal from "./components/SearchModal";
 import SubscriptionList from "./components/SubscriptionList";
@@ -90,7 +91,7 @@ export default function SubscriptionsPage() {
       setLoading(true);
       const subs = await getSubscriptions();
       setSubscriptions(subs);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
     } finally {
       setLoading(false);
@@ -102,8 +103,8 @@ export default function SubscriptionsPage() {
       setDeleteSubmitting(true);
       await deleteSubscription(id, { deleteFilesOnDisk });
       setSubscriptions((prev) => prev.filter((s) => s.id !== id));
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to delete subscription"));
     } finally {
       setDeleteSubmitting(false);
     }
@@ -126,8 +127,8 @@ export default function SubscriptionsPage() {
           item.id === sub.id ? { ...item, status: nextStatus } : item
         )
       );
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to update subscription"));
     } finally {
       setUpdatingIds((prev) => {
         const next = new Set(prev);

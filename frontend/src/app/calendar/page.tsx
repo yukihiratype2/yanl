@@ -37,7 +37,7 @@ export default function CalendarPage() {
       setLoading(true);
       const res = await getCalendarEpisodes(start, end);
       setEpisodes(res.episodes);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
     } finally {
       setLoading(false);

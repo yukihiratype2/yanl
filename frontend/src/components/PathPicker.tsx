@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen, Loader2, X } from "lucide-react";
 import { listDirectories, type DirEntry } from "@/lib/api";
+import { getErrorMessage, isAbortError } from "@/lib/errors";
 
 export type PathPickerProps = {
   value: string;
@@ -48,10 +49,10 @@ export default function PathPicker({
       try {
         const data = await listDirectories(path, controller.signal);
         setDirs(data.dirs);
-      } catch (err: any) {
-        if (err?.name !== "AbortError") {
+      } catch (err: unknown) {
+        if (!isAbortError(err)) {
           setDirs([]);
-          setError(err?.message || "Failed to load directories");
+          setError(getErrorMessage(err, "Failed to load directories"));
         }
       } finally {
         setLoading(false);

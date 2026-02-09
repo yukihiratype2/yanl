@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 1800;
+import { getErrorMessage } from "@/lib/errors";
 
 const BGM_CALENDAR_URL = "https://api.bgm.tv/calendar";
 
@@ -27,9 +28,9 @@ export async function GET() {
         "Cache-Control": "public, max-age=1800, s-maxage=1800",
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return Response.json(
-      { error: err?.message || "Failed to fetch BGM calendar" },
+      { error: getErrorMessage(err, "Failed to fetch BGM calendar") },
       { status: 500 }
     );
   }

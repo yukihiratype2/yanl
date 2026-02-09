@@ -9,6 +9,7 @@ import {
   type RSSItem,
   type Subscription,
 } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 
 type ExpandedSubscriptionProps = {
   sub: Subscription;
@@ -114,7 +115,7 @@ export default function ExpandedSubscription({
         episode: ep.episode_number,
       });
       setEpisodeSearchResults(results);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
     } finally {
       setEpisodeSearchLoading(false);
@@ -136,8 +137,8 @@ export default function ExpandedSubscription({
       setEpisodeSearchOpen(false);
       setEpisodeSearchTarget(null);
       onUpdate();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to add torrent"));
     } finally {
       setEpisodeDownloading(null);
     }

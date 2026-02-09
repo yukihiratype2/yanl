@@ -13,6 +13,7 @@ import {
   runMonitorJob,
   type JobStatus,
 } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 import ApiTokenSection from "./components/ApiTokenSection";
 import AiSection from "./components/AiSection";
 import EjectTitleSection from "./components/EjectTitleSection";
@@ -113,11 +114,17 @@ export default function SettingsPage() {
       setError(null);
       setNeedsAuth(false);
       loadJobs();
-    } catch (err: any) {
-      if (err.message && (err.message.includes("401") || err.message.toLowerCase().includes("invalid token") || err.message.toLowerCase().includes("missing authorization"))) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to load settings");
+      const normalized = message.toLowerCase();
+      if (
+        message.includes("401") ||
+        normalized.includes("invalid token") ||
+        normalized.includes("missing authorization")
+      ) {
         setNeedsAuth(true);
       } else {
-        setError(err.message);
+        setError(message);
       }
     } finally {
       setLoading(false);
@@ -171,8 +178,8 @@ export default function SettingsPage() {
       await updateSettings(settings);
       setSaveMessage("Settings saved successfully!");
       setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to save settings"));
     } finally {
       setSaving(false);
     }
@@ -189,8 +196,8 @@ export default function SettingsPage() {
           ? `Connected! Version: ${result.version}`
           : `Failed: ${result.error}`,
       });
-    } catch (err: any) {
-      setQbitStatus({ ok: false, message: err.message });
+    } catch (err: unknown) {
+      setQbitStatus({ ok: false, message: getErrorMessage(err, "Qbit test failed") });
     } finally {
       setTestingQbit(false);
     }
@@ -202,8 +209,8 @@ export default function SettingsPage() {
       setAiStatus(null);
       const result = await testAIConfig();
       setAiStatus({ ok: true, message: result.response || "Received response from AI" });
-    } catch (err: any) {
-      setAiStatus({ ok: false, message: err.message || "AI test failed" });
+    } catch (err: unknown) {
+      setAiStatus({ ok: false, message: getErrorMessage(err, "AI test failed") });
     } finally {
       setTestingAI(false);
     }
@@ -220,8 +227,8 @@ export default function SettingsPage() {
       await runMonitorJob(name);
       // Poll for updated status after a short delay
       setTimeout(() => loadJobs(), 1000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to run monitor job"));
     } finally {
       setRunningJobs((prev) => {
         const next = new Set(prev);

@@ -12,6 +12,7 @@ import {
   type BgmSubjectSmall,
 } from "@/lib/bgm";
 import { getSubscriptions, subscribe, type Subscription } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 7];
 const WEEKDAY_LABELS: Record<number, string> = {
@@ -54,9 +55,9 @@ export default function MediaListPage() {
       setError(null);
       const data = await getBgmCalendar();
       setCalendar(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "Failed to load BGM calendar");
+      setError(getErrorMessage(err, "Failed to load BGM calendar"));
     } finally {
       setLoading(false);
     }
@@ -73,8 +74,8 @@ export default function MediaListPage() {
         nextMap[sub.source_id] = sub;
       }
       setSubscribedMap(nextMap);
-    } catch (err: any) {
-      console.warn("Failed to load subscriptions:", err?.message || err);
+    } catch (err: unknown) {
+      console.warn("Failed to load subscriptions:", getErrorMessage(err));
     } finally {
       setSubsLoading(false);
     }
@@ -114,18 +115,19 @@ export default function MediaListPage() {
       return;
     }
 
+    const selectedItemId = selectedItem.id;
     let active = true;
     async function loadDetail() {
       try {
         setDetailLoading(true);
         setDetailError(null);
-        const data = await getBgmSubject(selectedItem.id);
+        const data = await getBgmSubject(selectedItemId);
         if (active) {
           setDetail(data);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (active) {
-          setDetailError(err?.message || "Failed to load details");
+          setDetailError(getErrorMessage(err, "Failed to load details"));
         }
       } finally {
         if (active) {
@@ -162,8 +164,8 @@ export default function MediaListPage() {
       });
       setSubscribedMap((prev) => ({ ...prev, [selectedItem.id]: sub }));
       setSubscribeState({ status: "success", message: "Subscribed" });
-    } catch (err: any) {
-      const message = err?.message || "Failed to subscribe";
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to subscribe");
       if (message.toLowerCase().includes("already subscribed")) {
         setSubscribeState({ status: "success", message: "Already subscribed" });
         loadSubscriptions();

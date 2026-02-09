@@ -9,6 +9,7 @@ import {
   updateSubscription,
   type Subscription,
 } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 import ExpandedSubscription from "../components/ExpandedSubscription";
 
 function statusClasses(status: string) {
@@ -40,8 +41,8 @@ export default function SubscriptionDetailPage() {
       setError(null);
       const detail = await getSubscription(id);
       setSubscription(detail);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load subscription.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to load subscription."));
     } finally {
       setLoading(false);
     }
@@ -59,8 +60,8 @@ export default function SubscriptionDetailPage() {
       setUpdating(true);
       await updateSubscription(subscription.id, { status: nextStatus });
       setSubscription({ ...subscription, status: nextStatus });
-    } catch (err: any) {
-      alert(err?.message || "Failed to update subscription.");
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to update subscription."));
     } finally {
       setUpdating(false);
     }
