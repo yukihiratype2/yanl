@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getSettings,
   updateSettings,
@@ -16,8 +16,15 @@ import type {
 } from "../components/NotifactionSection";
 
 type PathMapRow = {
+  id: string;
   from: string;
   to: string;
+};
+
+type PathMapRowError = {
+  row?: string;
+  from?: string;
+  to?: string;
 };
 
 type StatusMessage = { ok: boolean; message: string } | null;
@@ -159,6 +166,30 @@ function parseEjectRules(raw?: string): string[] {
   }
 }
 
+function generatePathMapRowId(): string {
+  return `path-map-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizePathForMatch(value: string): string {
+  const normalizedSlashes = value.trim().replace(/\\/g, "/");
+  const normalizedDrive = normalizedSlashes.replace(
+    /^([A-Za-z]):/,
+    (_, letter: string) => `${letter.toLowerCase()}:`
+  );
+  return normalizedDrive.replace(/\/{2,}/g, "/");
+}
+
+function stripTrailingSlashes(value: string): string {
+  const trimmed = value.replace(/\/+$/, "");
+  if (trimmed.length === 0) return "/";
+  if (/^[a-z]:$/.test(trimmed)) return `${trimmed}/`;
+  return trimmed;
+}
+
+function isAbsolutePath(value: string): boolean {
+  return value.startsWith("/") || /^[a-z]:\//.test(value);
+}
+
 function parsePathMap(raw?: string): PathMapRow[] {
   if (!raw) return [];
   try {
@@ -166,6 +197,7 @@ function parsePathMap(raw?: string): PathMapRow[] {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .map((entry) => ({
+        id: generatePathMapRowId(),
         from: typeof entry?.from === "string" ? entry.from : "",
         to: typeof entry?.to === "string" ? entry.to : "",
       }))
@@ -185,6 +217,57 @@ function serializePathMap(rows: PathMapRow[]): string {
   return JSON.stringify(cleaned);
 }
 
+function validatePathMapRows(rows: PathMapRow[]): Record<string, PathMapRowError> {
+  const errors: Record<string, PathMapRowError> = {};
+  const seenFrom = new Map<string, string[]>();
+
+  for (const row of rows) {
+    const from = row.from.trim();
+    const to = row.to.trim();
+    const rowError: PathMapRowError = {};
+    if (!from && !to) {
+      rowError.row = "Complete both paths or remove this row.";
+      errors[row.id] = rowError;
+      continue;
+    }
+
+    if (!from) rowError.from = "Source path is required.";
+    if (!to) rowError.to = "Destination path is required.";
+
+    const normalizedFrom = stripTrailingSlashes(normalizePathForMatch(from));
+    const normalizedTo = stripTrailingSlashes(normalizePathForMatch(to));
+
+    if (from && !isAbsolutePath(normalizedFrom)) {
+      rowError.from = "Source path must be absolute.";
+    }
+    if (to && !isAbsolutePath(normalizedTo)) {
+      rowError.to = "Destination path must be absolute.";
+    }
+
+    if (!rowError.from && !rowError.to) {
+      const bucket = seenFrom.get(normalizedFrom) || [];
+      bucket.push(row.id);
+      seenFrom.set(normalizedFrom, bucket);
+    }
+
+    if (rowError.row || rowError.from || rowError.to) {
+      errors[row.id] = rowError;
+    }
+  }
+
+  for (const duplicateIds of seenFrom.values()) {
+    if (duplicateIds.length < 2) continue;
+    for (const rowId of duplicateIds) {
+      errors[rowId] = {
+        ...errors[rowId],
+        from: "Duplicate source path.",
+      };
+    }
+  }
+
+  return errors;
+}
+
 export function useSettingsForm() {
   const [settings, setSettingsState] = useState<Record<string, string>>({});
   const [token, setTokenState] = useState("");
@@ -200,6 +283,8 @@ export function useSettingsForm() {
   const [pathMapRows, setPathMapRows] = useState<PathMapRow[]>([]);
   const [ejectRules, setEjectRules] = useState<string[]>([]);
   const [notifactions, setNotifactions] = useState<Notifaction[]>([]);
+  const pathMapErrors = useMemo(() => validatePathMapRows(pathMapRows), [pathMapRows]);
+  const hasPathMapValidationError = Object.keys(pathMapErrors).length > 0;
 
   const loadSettings = useCallback(async () => {
     try {
@@ -272,7 +357,10 @@ export function useSettingsForm() {
   );
 
   const handleAddPathMap = useCallback(() => {
-    updatePathMapRows([...pathMapRows, { from: "", to: "" }]);
+    updatePathMapRows([
+      ...pathMapRows,
+      { id: generatePathMapRowId(), from: "", to: "" },
+    ]);
   }, [pathMapRows, updatePathMapRows]);
 
   const handleRemovePathMap = useCallback(
@@ -301,6 +389,11 @@ export function useSettingsForm() {
   );
 
   const handleSave = useCallback(async () => {
+    if (hasPathMapValidationError) {
+      setError("Fix Folder Map validation errors before saving settings.");
+      return;
+    }
+
     try {
       setSaving(true);
       await updateSettings(settings);
@@ -312,7 +405,7 @@ export function useSettingsForm() {
     } finally {
       setSaving(false);
     }
-  }, [settings]);
+  }, [hasPathMapValidationError, settings]);
 
   const handleTestQbit = useCallback(async () => {
     try {
@@ -363,6 +456,8 @@ export function useSettingsForm() {
     saveMessage,
     error,
     pathMapRows,
+    pathMapErrors,
+    hasPathMapValidationError,
     ejectRules,
     notifactions,
     setTokenState,

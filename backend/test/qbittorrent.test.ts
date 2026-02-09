@@ -51,6 +51,39 @@ describe("services/qbittorrent", () => {
     expect(mapped).toBe("/local/show/file.mkv");
   });
 
+  it("supports root mapping for absolute paths", async () => {
+    settings.qbit_path_map = JSON.stringify([{ from: "/", to: "/local" }]);
+    const qb = await loadQb();
+    const mapped = qb.mapQbitPathToLocal("/downloads/show/file.mkv");
+    expect(mapped).toBe("/local/downloads/show/file.mkv");
+  });
+
+  it("uses longest matching source path", async () => {
+    settings.qbit_path_map = JSON.stringify([
+      { from: "/remote", to: "/local" },
+      { from: "/remote/show", to: "/library/show" },
+    ]);
+    const qb = await loadQb();
+    const mapped = qb.mapQbitPathToLocal("/remote/show/file.mkv");
+    expect(mapped).toBe("/library/show/file.mkv");
+  });
+
+  it("rejects mapping when normalized target escapes mapping root", async () => {
+    settings.qbit_path_map = JSON.stringify([{ from: "/remote", to: "/local" }]);
+    const qb = await loadQb();
+    const mapped = qb.mapQbitPathToLocal("/remote/../etc/passwd");
+    expect(mapped).toBe("/remote/../etc/passwd");
+  });
+
+  it("matches windows drive letters case-insensitively", async () => {
+    settings.qbit_path_map = JSON.stringify([
+      { from: "c:/downloads", to: "d:/media" },
+    ]);
+    const qb = await loadQb();
+    const mapped = qb.mapQbitPathToLocal("C:/downloads/show/file.mkv");
+    expect(mapped).toBe("d:/media/show/file.mkv");
+  });
+
   it("adds torrent and attaches tag", async () => {
     const qb = await loadQb();
     const { calls } = mockFetch((input) => {

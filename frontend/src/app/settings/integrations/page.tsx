@@ -23,6 +23,8 @@ export default function SettingsIntegrationsPage() {
     saveMessage,
     error,
     pathMapRows,
+    pathMapErrors,
+    hasPathMapValidationError,
     notifactions,
     setTokenState,
     handleChange,
@@ -58,6 +60,7 @@ export default function SettingsIntegrationsPage() {
     <SettingsShell
       activeRoute="integrations"
       saving={saving}
+      saveDisabled={hasPathMapValidationError}
       error={error}
       saveMessage={saveMessage}
       onSave={handleSave}
@@ -66,6 +69,7 @@ export default function SettingsIntegrationsPage() {
         settings={settings}
         onChange={handleChange}
         pathMapRows={pathMapRows}
+        pathMapErrors={pathMapErrors}
         onPathMapChange={handlePathMapChange}
         onAddPathMap={handleAddPathMap}
         onRemovePathMap={handleRemovePathMap}

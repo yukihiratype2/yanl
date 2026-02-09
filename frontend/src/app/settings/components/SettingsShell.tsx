@@ -9,6 +9,7 @@ import SettingsRouteNav, { type SettingsRouteKey } from "./SettingsRouteNav";
 type Props = {
   activeRoute: SettingsRouteKey;
   saving: boolean;
+  saveDisabled?: boolean;
   error: string | null;
   saveMessage: string | null;
   onSave: () => void;
@@ -18,6 +19,7 @@ type Props = {
 export default function SettingsShell({
   activeRoute,
   saving,
+  saveDisabled = false,
   error,
   saveMessage,
   onSave,
@@ -31,7 +33,7 @@ export default function SettingsShell({
         </h1>
         <Button
           onClick={onSave}
-          disabled={saving}
+          disabled={saving || saveDisabled}
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />

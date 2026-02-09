@@ -124,4 +124,35 @@ describe("routes/settings", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("returns 400 for invalid qbit_path_map payload", async () => {
+    const res = await routes.default.request("/", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        qbit_path_map: JSON.stringify([{ from: "relative/path", to: "/local" }]),
+      }),
+    });
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.field).toBe("qbit_path_map");
+    expect(body.error).toContain("absolute paths");
+  });
+
+  it("returns 400 for duplicate qbit_path_map from paths", async () => {
+    const res = await routes.default.request("/", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        qbit_path_map: JSON.stringify([
+          { from: "/downloads", to: "/mnt/downloads" },
+          { from: "/downloads/", to: "/media/downloads" },
+        ]),
+      }),
+    });
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.field).toBe("qbit_path_map");
+    expect(body.error).toContain("duplicate from path");
+  });
 });

@@ -15,8 +15,15 @@ import { Field, Section } from "./Section";
 type SettingsMap = Record<string, string>;
 
 type PathMapRow = {
+  id: string;
   from: string;
   to: string;
+};
+
+type PathMapRowError = {
+  row?: string;
+  from?: string;
+  to?: string;
 };
 
 type StatusMessage = { ok: boolean; message: string } | null;
@@ -25,6 +32,7 @@ type Props = {
   settings: SettingsMap;
   onChange: (key: string, value: string) => void;
   pathMapRows: PathMapRow[];
+  pathMapErrors: Record<string, PathMapRowError>;
   onPathMapChange: (index: number, field: "from" | "to", value: string) => void;
   onAddPathMap: () => void;
   onRemovePathMap: (index: number) => void;
@@ -37,6 +45,7 @@ export default function QbitSection({
   settings,
   onChange,
   pathMapRows,
+  pathMapErrors,
   onPathMapChange,
   onAddPathMap,
   onRemovePathMap,
@@ -117,28 +126,43 @@ export default function QbitSection({
             <div className="space-y-2">
               {pathMapRows.map((row, index) => (
                 <div
-                  key={`${row.from}-${row.to}-${index}`}
+                  key={row.id}
                   className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2"
                 >
-                  <Input
-                    type="text"
-                    value={row.from}
-                    onChange={(e) => onPathMapChange(index, "from", e.target.value)}
-                    placeholder="/mnt/Media"
-                  />
-                  <Input
-                    type="text"
-                    value={row.to}
-                    onChange={(e) => onPathMapChange(index, "to", e.target.value)}
-                    placeholder="/media/Media"
-                  />
-                  <Button
-                    onClick={() => onRemovePathMap(index)}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    Remove
-                  </Button>
+                  <div>
+                    <Input
+                      type="text"
+                      value={row.from}
+                      onChange={(e) => onPathMapChange(index, "from", e.target.value)}
+                      placeholder="/mnt/Media"
+                    />
+                    {pathMapErrors[row.id]?.from && (
+                      <p className="mt-1 text-xs text-destructive">{pathMapErrors[row.id]?.from}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      type="text"
+                      value={row.to}
+                      onChange={(e) => onPathMapChange(index, "to", e.target.value)}
+                      placeholder="/media/Media"
+                    />
+                    {pathMapErrors[row.id]?.to && (
+                      <p className="mt-1 text-xs text-destructive">{pathMapErrors[row.id]?.to}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Button
+                      onClick={() => onRemovePathMap(index)}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      Remove
+                    </Button>
+                    {pathMapErrors[row.id]?.row && (
+                      <p className="mt-1 text-xs text-destructive">{pathMapErrors[row.id]?.row}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

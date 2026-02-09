@@ -1,5 +1,5 @@
-import { normalize } from "path";
 import { getSetting } from "../db/settings";
+import { posix } from "path";
 import {
   reportIntegrationFailure,
   reportIntegrationSuccess,
@@ -227,14 +227,43 @@ export class QbittorrentService {
   private loginPromise: Promise<string> | null = null;
 
   private normalizePathForMatch(value: string): string {
-    return value.replace(/\\/g, "/");
+    const normalizedSlashes = value.trim().replace(/\\/g, "/");
+    const normalizedDrive = normalizedSlashes.replace(
+      /^([A-Za-z]):/,
+      (_, letter: string) => `${letter.toLowerCase()}:`
+    );
+    return normalizedDrive.replace(/\/{2,}/g, "/");
   }
 
   private stripTrailingSlashes(value: string): string {
     const trimmed = value.replace(/\/+$/, "");
     if (trimmed.length === 0) return "/";
-    if (/^[A-Za-z]:$/.test(trimmed)) return `${trimmed}/`;
+    if (/^[a-z]:$/.test(trimmed)) return `${trimmed}/`;
     return trimmed;
+  }
+
+  private isPathWithinRoot(path: string, root: string): boolean {
+    const normalizedPath = this.stripTrailingSlashes(this.normalizePathForMatch(path));
+    const normalizedRoot = this.stripTrailingSlashes(this.normalizePathForMatch(root));
+
+    if (normalizedPath === normalizedRoot) return true;
+    const prefix = normalizedRoot.endsWith("/") ? normalizedRoot : `${normalizedRoot}/`;
+    return normalizedPath.startsWith(prefix);
+  }
+
+  private normalizePathForFilesystem(value: string): string {
+    // We keep slash normalization predictable across platforms, while still collapsing ".." segments.
+    const normalizedForMatch = this.normalizePathForMatch(value);
+    return this.stripTrailingSlashes(posix.normalize(normalizedForMatch));
+  }
+
+  private joinMappedPath(base: string, suffix: string): string {
+    const normalizedBase = this.stripTrailingSlashes(base);
+    const normalizedSuffix = suffix.replace(/^\/+/, "");
+    if (!normalizedSuffix) return normalizedBase;
+    if (normalizedBase === "/") return `/${normalizedSuffix}`;
+    if (/^[a-z]:\/$/.test(normalizedBase)) return `${normalizedBase}${normalizedSuffix}`;
+    return `${normalizedBase}/${normalizedSuffix}`;
   }
 
   getQbitPathMap(): QbitPathMapEntry[] {
@@ -260,22 +289,37 @@ export class QbittorrentService {
     const mapEntries = this.getQbitPathMap();
     if (mapEntries.length === 0) return path;
 
-    const normalizedPath = this.normalizePathForMatch(path);
+    const normalizedPath = this.normalizePathForFilesystem(path);
     const sorted = [...mapEntries].sort((a, b) => {
-      const aLen = this.stripTrailingSlashes(this.normalizePathForMatch(a.from)).length;
-      const bLen = this.stripTrailingSlashes(this.normalizePathForMatch(b.from)).length;
+      const aLen = this.stripTrailingSlashes(this.normalizePathForFilesystem(a.from)).length;
+      const bLen = this.stripTrailingSlashes(this.normalizePathForFilesystem(b.from)).length;
       return bLen - aLen;
     });
 
     for (const entry of sorted) {
-      const from = this.stripTrailingSlashes(this.normalizePathForMatch(entry.from));
-      const to = this.stripTrailingSlashes(this.normalizePathForMatch(entry.to));
+      const from = this.stripTrailingSlashes(this.normalizePathForFilesystem(entry.from));
+      const to = this.stripTrailingSlashes(this.normalizePathForFilesystem(entry.to));
       if (!from || !to) continue;
 
-      if (normalizedPath === from || normalizedPath.startsWith(`${from}/`)) {
+      const fromPrefix = from.endsWith("/") ? from : `${from}/`;
+      if (normalizedPath === from || normalizedPath.startsWith(fromPrefix)) {
         const suffix = normalizedPath.slice(from.length);
-        const mapped = `${to}${suffix}`;
-        return normalize(mapped);
+        const mapped = this.normalizePathForFilesystem(this.joinMappedPath(to, suffix));
+        if (!this.isPathWithinRoot(mapped, to)) {
+          logger.warn(
+            {
+              op: "integration.qbit.path_map_rejected",
+              sourcePath: path,
+              normalizedPath,
+              from,
+              to,
+              mapped,
+            },
+            "Rejected qBittorrent path mapping because target escaped mapping root"
+          );
+          return path;
+        }
+        return mapped;
       }
     }
 

@@ -68,4 +68,30 @@ describe("config", () => {
     expect(updated.notifactions[0]?.events).toEqual(["media_released"]);
     expect(updated.notifactions[1]?.provider).toBe("telegram");
   });
+
+  it("updates qbit path map with normalized absolute paths", async () => {
+    const configModule = await import("../src/config?test=qbit-path-map-valid");
+    configModule.loadConfig();
+    configModule.updateConfigValues({
+      qbit_path_map: JSON.stringify([
+        { from: "C:\\downloads\\", to: "D:\\media\\" },
+        { from: "/mnt/tv/", to: "/media/tv/" },
+      ]),
+    });
+    const updated = configModule.loadConfig();
+    expect(updated.qbittorrent.path_map).toEqual([
+      { from: "c:/downloads", to: "d:/media" },
+      { from: "/mnt/tv", to: "/media/tv" },
+    ]);
+  });
+
+  it("throws when qbit path map is invalid", async () => {
+    const configModule = await import("../src/config?test=qbit-path-map-invalid");
+    configModule.loadConfig();
+    expect(() =>
+      configModule.updateConfigValues({
+        qbit_path_map: JSON.stringify([{ from: "downloads", to: "/media" }]),
+      })
+    ).toThrow("Invalid qbit_path_map");
+  });
 });

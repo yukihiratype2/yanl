@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getAllSettings, setSettings, getSetting } from "../db/settings";
+import { parseQbitPathMapValue } from "../config";
 import { testAIConfig } from "../services/ai";
 import { logger, reconfigureLogger } from "../services/logger";
 
@@ -27,7 +28,29 @@ settingsRoutes.put("/", async (c) => {
   }
   // Prevent changing api_token through this endpoint
   delete body.api_token;
-  setSettings(body);
+
+  if (Object.hasOwn(body, "qbit_path_map")) {
+    const raw = body.qbit_path_map;
+    if (typeof raw !== "string") {
+      return c.json({ error: "Invalid qbit_path_map: expected string value" }, 400);
+    }
+    try {
+      const normalized = parseQbitPathMapValue(raw);
+      body.qbit_path_map = JSON.stringify(normalized);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid qbit_path_map";
+      return c.json({ error: message, field: "qbit_path_map" }, 400);
+    }
+  }
+
+  try {
+    setSettings(body);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update settings";
+    const isValidationError = message.toLowerCase().includes("qbit_path_map");
+    return c.json({ error: message }, isValidationError ? 400 : 500);
+  }
+
   // Apply log settings (dir/level) immediately when updated.
   reconfigureLogger();
   return c.json({ success: true });

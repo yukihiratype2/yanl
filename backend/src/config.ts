@@ -178,6 +178,71 @@ function normalizeNotifactions(value: unknown): NotifactionConfig[] {
     .filter((entry): entry is NotifactionConfig => entry !== null);
 }
 
+function normalizePathForMatch(value: string): string {
+  const normalizedSlashes = value.trim().replace(/\\/g, "/");
+  const normalizedDrive = normalizedSlashes.replace(
+    /^([A-Za-z]):/,
+    (_, letter: string) => `${letter.toLowerCase()}:`
+  );
+  return normalizedDrive.replace(/\/{2,}/g, "/");
+}
+
+function stripTrailingSlashes(value: string): string {
+  const trimmed = value.replace(/\/+$/, "");
+  if (trimmed.length === 0) return "/";
+  if (/^[a-z]:$/.test(trimmed)) return `${trimmed}/`;
+  return trimmed;
+}
+
+function isAbsolutePath(value: string): boolean {
+  return value.startsWith("/") || /^[a-z]:\//.test(value);
+}
+
+export function parseQbitPathMapValue(value: string): Array<{ from: string; to: string }> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid qbit_path_map: expected valid JSON array");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("Invalid qbit_path_map: expected an array");
+  }
+
+  const seenFrom = new Set<string>();
+  const normalizedRows: Array<{ from: string; to: string }> = [];
+  for (const [index, entry] of parsed.entries()) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error(`Invalid qbit_path_map[${index}]: expected object`);
+    }
+
+    const fromRaw = (entry as Record<string, unknown>).from;
+    const toRaw = (entry as Record<string, unknown>).to;
+    if (typeof fromRaw !== "string" || typeof toRaw !== "string") {
+      throw new Error(`Invalid qbit_path_map[${index}]: from/to must be strings`);
+    }
+
+    const from = stripTrailingSlashes(normalizePathForMatch(fromRaw));
+    const to = stripTrailingSlashes(normalizePathForMatch(toRaw));
+
+    if (!from || !to) {
+      throw new Error(`Invalid qbit_path_map[${index}]: from/to cannot be empty`);
+    }
+    if (!isAbsolutePath(from) || !isAbsolutePath(to)) {
+      throw new Error(`Invalid qbit_path_map[${index}]: from/to must be absolute paths`);
+    }
+    if (seenFrom.has(from)) {
+      throw new Error(`Invalid qbit_path_map[${index}]: duplicate from path "${from}"`);
+    }
+
+    seenFrom.add(from);
+    normalizedRows.push({ from, to });
+  }
+
+  return normalizedRows;
+}
+
 const DEFAULT_CONFIG: Config = {
   core: {
     api_token: "", // Will be generated if empty or missing
@@ -341,19 +406,7 @@ export function updateConfigValues(updates: Record<string, string>): void {
       case "qbit_download_dir_tv": config.qbittorrent.download_dirs.tv = value; break;
       case "qbit_download_dir_movie": config.qbittorrent.download_dirs.movie = value; break;
       case "qbit_path_map":
-        try {
-          const parsed = JSON.parse(value);
-          if (Array.isArray(parsed)) {
-            config.qbittorrent.path_map = parsed
-              .map((entry) => ({
-                from: typeof entry?.from === "string" ? entry.from : "",
-                to: typeof entry?.to === "string" ? entry.to : "",
-              }))
-              .filter((entry) => entry.from && entry.to);
-          }
-        } catch {
-          // Ignore invalid JSON, keep existing map
-        }
+        config.qbittorrent.path_map = parseQbitPathMapValue(value);
         break;
       case "tmdb_token": config.tmdb.token = value; break;
       case "media_dir_anime": config.media_dirs.anime = value; break;
