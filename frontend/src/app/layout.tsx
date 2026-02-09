@@ -28,7 +28,9 @@ const themeScript = `
       : prefersDark
         ? "dark"
         : "light";
-  document.documentElement.classList.toggle("dark", theme === "dark");
+  const resolvedTheme =
+    stored === "system" ? (prefersDark ? "dark" : "light") : theme;
+  document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
 })();
 `;
 
