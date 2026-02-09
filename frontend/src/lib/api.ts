@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim() || "";
 
 function getToken(): string {
   if (typeof window === "undefined") return "";
@@ -72,10 +72,13 @@ export async function listDirectories(
   path: string,
   signal?: AbortSignal
 ): Promise<{ path: string; dirs: DirEntry[] }> {
-  const response = await fetch(`/api/dirs?path=${encodeURIComponent(path)}`, {
-    method: "GET",
-    signal,
-  });
+  const response = await fetch(
+    `/internal-api/dirs?path=${encodeURIComponent(path)}`,
+    {
+      method: "GET",
+      signal,
+    }
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));

@@ -85,7 +85,7 @@ export interface BgmSubjectDetail {
 }
 
 export async function getBgmCalendar(): Promise<BgmCalendarDay[]> {
-  const response = await fetch("/api/bgm/calendar", {
+  const response = await fetch("/internal-api/bgm/calendar", {
     method: "GET",
     cache: "no-store",
   });
@@ -103,7 +103,7 @@ export async function getBgmCalendar(): Promise<BgmCalendarDay[]> {
 export async function getBgmSubject(
   id: number
 ): Promise<BgmSubjectDetail> {
-  const response = await fetch(`/api/bgm/subjects/${id}`, {
+  const response = await fetch(`/internal-api/bgm/subjects/${id}`, {
     method: "GET",
     cache: "no-store",
   });
