@@ -1,4 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { makeJsonResponse, mockFetch } from "./helpers";
 import { modulePath } from "./mockPath";
 
@@ -25,5 +27,16 @@ describe("services/tmdb", () => {
     expect((call.init?.headers as Record<string, string>).Authorization).toBe(
       "Bearer token"
     );
+  });
+
+  it("resolves TV by TVDB id through TMDB find endpoint", async () => {
+    const { calls } = mockFetch(() =>
+      makeJsonResponse({ tv_results: [{ id: 321, name: "Show" }] })
+    );
+
+    const result = await tmdb.findTVByTvdbId(123);
+    expect(result?.id).toBe(321);
+    expect(String(calls[0].input)).toContain("/find/123");
+    expect(String(calls[0].input)).toContain("external_source=tvdb_id");
   });
 });

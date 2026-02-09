@@ -82,3 +82,15 @@ Key backend pieces:
 - `backend/src/services/monitor/downloads.ts`: RSS match and queue to qBittorrent.
 - `backend/src/services/monitor/download-monitor.ts`: completion detection and file move.
 - `backend/src/services/qbittorrent.ts`: managed-tag filtering, completion checks, and cleanup logic.
+
+## Jellyseerr Sonarr Integration
+
+NAS Tools now exposes a Sonarr-compatible API under `http://<backend-host>:3001/api/v3`.
+
+Use these values when adding a Sonarr server in Jellyseerr:
+
+- **Server URL**: `http://<backend-host>:3001`
+- **API Key**: NAS Tools `api_token` (same token shown by backend and `/api/settings/token`)
+- **Base URL**: leave empty unless you run NAS Tools behind a reverse proxy path
+
+Supported Sonarr-compatible endpoints include system status, quality profiles, root folders, language profiles, tags, series lookup/list/add/update/delete, episodes, queue, and command triggers.

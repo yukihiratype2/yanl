@@ -1,4 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { Hono } from "hono";
 import { modulePath } from "./mockPath";
 
@@ -57,6 +59,26 @@ describe("middleware/auth", () => {
       headers: { Authorization: "Bearer wrong" },
     });
     expect(bad.status).toBe(401);
+  });
+
+  it("accepts x-api-key for /api/v3 routes", async () => {
+    const app = new Hono();
+    app.use("/api/*", authMiddleware);
+    app.get("/api/v3/test", (c) => c.text("ok"));
+
+    const res = await app.request("/api/v3/test", {
+      headers: { "x-api-key": "token" },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("accepts apikey query param for /api/v3 routes", async () => {
+    const app = new Hono();
+    app.use("/api/*", authMiddleware);
+    app.get("/api/v3/test", (c) => c.text("ok"));
+
+    const res = await app.request("/api/v3/test?apikey=token");
+    expect(res.status).toBe(200);
   });
 
   it("extracts the first x-forwarded-for IP", async () => {

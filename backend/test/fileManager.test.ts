@@ -1,4 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { mkdtempSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { tmpdir } from "os";
 import { join } from "path";

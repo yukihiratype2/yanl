@@ -65,13 +65,27 @@ export async function authMiddleware(c: Context, next: Next) {
     return next();
   }
 
+  const isSonarrV3Route = c.req.path === "/api/v3" || c.req.path.startsWith("/api/v3/");
+  const apiToken = getSetting("api_token");
+  const sonarrApiKey =
+    c.req.header("X-Api-Key") ?? c.req.header("x-api-key") ?? c.req.query("apikey");
+
+  if (isSonarrV3Route && apiToken && sonarrApiKey) {
+    if (sonarrApiKey === apiToken) {
+      await next();
+      return;
+    }
+    return c.json({ error: "Invalid token" }, 401);
+  }
+
   const authHeader = c.req.header("Authorization");
   if (!authHeader) {
     return c.json({ error: "Missing Authorization header" }, 401);
   }
 
-  const token = authHeader.replace("Bearer ", "");
-  const apiToken = getSetting("api_token");
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : authHeader;
 
   if (!apiToken || token !== apiToken) {
     return c.json({ error: "Invalid token" }, 401);

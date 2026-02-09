@@ -1,4 +1,6 @@
 import { afterAll, describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { modulePath } from "./mockPath";
 
 let logged = "";

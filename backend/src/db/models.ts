@@ -70,6 +70,13 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface SonarrTag {
+  id: number;
+  label: string;
+  created_at: string;
+  updated_at: string;
+}
+
 function assertCanonicalDateValue(
   field: "first_air_date" | "air_date",
   value: unknown
@@ -186,6 +193,12 @@ export function getEpisodesBySubscription(
       "SELECT * FROM episodes WHERE subscription_id = ? ORDER BY episode_number ASC"
     )
     .all(subscriptionId) as Episode[];
+}
+
+export function getEpisodeById(id: number): Episode | undefined {
+  return db
+    .prepare("SELECT * FROM episodes WHERE id = ?")
+    .get(id) as Episode | undefined;
 }
 
 export function createEpisode(
@@ -387,4 +400,36 @@ export function updateProfile(id: number, data: Partial<Profile>): void {
 
 export function deleteProfile(id: number): void {
   db.prepare("DELETE FROM profiles WHERE id = ?").run(id);
+}
+
+// ---- Sonarr Tags ----
+
+export function getAllSonarrTags(): SonarrTag[] {
+  return db.prepare("SELECT * FROM sonarr_tags ORDER BY id ASC").all() as SonarrTag[];
+}
+
+export function getSonarrTagById(id: number): SonarrTag | undefined {
+  return db.prepare("SELECT * FROM sonarr_tags WHERE id = ?").get(id) as
+    | SonarrTag
+    | undefined;
+}
+
+export function getSonarrTagByLabel(label: string): SonarrTag | undefined {
+  return db.prepare("SELECT * FROM sonarr_tags WHERE label = ?").get(label) as
+    | SonarrTag
+    | undefined;
+}
+
+export function createSonarrTag(label: string): SonarrTag {
+  const result = db
+    .prepare("INSERT INTO sonarr_tags (label) VALUES (?)")
+    .run(label.trim());
+  return getSonarrTagById(Number(result.lastInsertRowid))!;
+}
+
+export function getOrCreateSonarrTag(label: string): SonarrTag {
+  const normalized = label.trim();
+  const existing = getSonarrTagByLabel(normalized);
+  if (existing) return existing;
+  return createSonarrTag(normalized);
 }

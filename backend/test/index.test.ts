@@ -1,4 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { modulePath } from "./mockPath";
 
 process.env.NAS_TOOLS_DB_PATH = ":memory:";

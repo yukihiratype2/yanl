@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { makeTextResponse, mockFetch } from "./helpers";
 import { modulePath } from "./mockPath";
 

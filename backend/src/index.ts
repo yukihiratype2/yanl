@@ -11,6 +11,7 @@ import calendarRoutes from "./routes/calendar";
 import monitorRoutes from "./routes/monitor";
 import integrationsRoutes from "./routes/integrations";
 import profileRoutes from "./routes/profiles";
+import sonarrRoutes from "./routes/sonarr";
 import { registerMcpRoutes } from "./mcp/router";
 import { getSetting } from "./db/settings";
 import { startMonitor } from "./services/monitor";
@@ -45,6 +46,7 @@ app.use("/mcp/*", authMiddleware);
 
 // API routes
 app.route("/api/settings", settingsRoutes);
+app.route("/api/v3", sonarrRoutes);
 app.route("/api/search", searchRoutes);
 app.route("/api/subscriptions", subscriptionRoutes);
 app.route("/api/torrents", torrentRoutes);

@@ -1,4 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { makeJsonResponse, mockFetch } from "./helpers";
 import { modulePath } from "./mockPath";
 

@@ -207,6 +207,13 @@ export function initDatabase() {
       updated_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS sonarr_tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      label TEXT NOT NULL UNIQUE,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS subscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       source TEXT NOT NULL DEFAULT 'tvdb',

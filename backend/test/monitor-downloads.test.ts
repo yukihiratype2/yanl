@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { modulePath } from "./mockPath";
 
 const updates: any[] = [];

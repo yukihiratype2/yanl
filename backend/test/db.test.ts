@@ -1,4 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
+
+mock.restore();
 import { modulePath } from "./mockPath";
 
 const loggerMock = () => ({
@@ -26,6 +28,7 @@ describe("db/index", () => {
       .all() as Array<{ name: string }>;
     const names = rows.map((r) => r.name);
     expect(names).toContain("profiles");
+    expect(names).toContain("sonarr_tags");
     expect(names).toContain("subscriptions");
     expect(names).toContain("episodes");
     expect(names).toContain("torrents");

@@ -28,6 +28,10 @@ interface TMDBSearchResponse {
   total_results: number;
 }
 
+interface TMDBFindResponse {
+  tv_results: TMDBSearchResult[];
+}
+
 interface TMDBSeasonDetail {
   id: number;
   season_number: number;
@@ -67,6 +71,13 @@ interface TMDBTVDetail {
     poster_path: string | null;
   }[];
   genres: { id: number; name: string }[];
+}
+
+export interface TMDBTVExternalIds {
+  id: number;
+  imdb_id: string | null;
+  tvdb_id: number | null;
+  tvmaze_id: number | null;
 }
 
 interface TMDBMovieDetail {
@@ -142,6 +153,18 @@ export async function searchMovie(query: string, page = 1): Promise<TMDBSearchRe
 
 export async function getTVDetail(tvId: number): Promise<TMDBTVDetail> {
   return tmdbFetch<TMDBTVDetail>(`/tv/${tvId}`, { language: "zh-CN" });
+}
+
+export async function findTVByTvdbId(tvdbId: number): Promise<TMDBSearchResult | null> {
+  const result = await tmdbFetch<TMDBFindResponse>(`/find/${tvdbId}`, {
+    external_source: "tvdb_id",
+    language: "zh-CN",
+  });
+  return result.tv_results[0] ?? null;
+}
+
+export async function getTVExternalIds(tvId: number): Promise<TMDBTVExternalIds> {
+  return tmdbFetch<TMDBTVExternalIds>(`/tv/${tvId}/external_ids`);
 }
 
 export async function getMovieDetail(movieId: number): Promise<TMDBMovieDetail> {
