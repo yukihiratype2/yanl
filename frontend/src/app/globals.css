@@ -1,6 +1,26 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+  --accent: #6366f1;
+  --border: #e2e8f0;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --destructive: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+}
+
+.dark {
+  color-scheme: dark;
   --background: #0f172a;
   --foreground: #e2e8f0;
   --card: #1e293b;
