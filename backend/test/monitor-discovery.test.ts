@@ -43,7 +43,6 @@ const modelsMock = () => ({
   getEpisodesWithAirDateRange: () => [],
 });
 mock.module(modulePath("../src/db/models"), modelsMock);
-mock.module(`${modulePath("../src/db/models")}?test=monitor-discovery`, modelsMock);
 mock.module("../../db/models", modelsMock);
 
 const tmdbMock = () => ({
@@ -60,7 +59,6 @@ const tmdbMock = () => ({
   }),
 });
 mock.module(modulePath("../src/services/tmdb"), tmdbMock);
-mock.module(`${modulePath("../src/services/tmdb")}?test=monitor-discovery`, tmdbMock);
 mock.module("../tmdb", tmdbMock);
 
 const bgmMock = () => ({
@@ -69,7 +67,6 @@ const bgmMock = () => ({
   ],
 });
 mock.module(modulePath("../src/services/bgm"), bgmMock);
-mock.module(`${modulePath("../src/services/bgm")}?test=monitor-discovery`, bgmMock);
 mock.module("../bgm", bgmMock);
 
 const loggerMock = () => ({
@@ -80,18 +77,12 @@ const loggerMock = () => ({
   reconfigureLogger: () => ({ info: () => {} }),
 });
 mock.module(modulePath("../src/services/logger"), loggerMock);
-mock.module(`${modulePath("../src/services/logger")}?test=monitor-discovery`, loggerMock);
 mock.module("../logger", loggerMock);
 
 const utilsMock = () => ({
   getTodayISO: () => "2024-01-02",
-  parseMagnetHash: () => null,
 });
 mock.module(modulePath("../src/services/monitor/utils"), utilsMock);
-mock.module(
-  `${modulePath("../src/services/monitor/utils")}?test=monitor-discovery`,
-  utilsMock
-);
 mock.module("./utils", utilsMock);
 
 const discovery = await import("../src/services/monitor/discovery?test=monitor-discovery");

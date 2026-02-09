@@ -48,7 +48,6 @@ const modelsMock = () => ({
   getAllProfiles: () => [],
 });
 mock.module(modulePath("../src/db/models"), modelsMock);
-mock.module(`${modulePath("../src/db/models")}?test=monitor-downloads`, modelsMock);
 mock.module("../../db/models", modelsMock);
 
 const rssMock = () => ({
@@ -62,7 +61,6 @@ const rssMock = () => ({
   ],
 });
 mock.module(modulePath("../src/services/rss"), rssMock);
-mock.module(`${modulePath("../src/services/rss")}?test=monitor-downloads`, rssMock);
 mock.module("../rss", rssMock);
 
 const qbitMock = () => ({
@@ -70,10 +68,6 @@ const qbitMock = () => ({
   addTorrentByUrl: async () => true,
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);
-mock.module(
-  `${modulePath("../src/services/qbittorrent")}?test=monitor-downloads`,
-  qbitMock
-);
 mock.module("../qbittorrent", qbitMock);
 
 const loggerMock = () => ({
@@ -85,7 +79,6 @@ const loggerMock = () => ({
   reconfigureLogger: () => ({ info: () => {} }),
 });
 mock.module(modulePath("../src/services/logger"), loggerMock);
-mock.module(`${modulePath("../src/services/logger")}?test=monitor-downloads`, loggerMock);
 mock.module("../logger", loggerMock);
 
 const matchersMock = () => ({
@@ -94,10 +87,6 @@ const matchersMock = () => ({
   matchesProfile: () => ({ ok: true }),
 });
 mock.module(modulePath("../src/services/monitor/matchers"), matchersMock);
-mock.module(
-  `${modulePath("../src/services/monitor/matchers")}?test=monitor-downloads`,
-  matchersMock
-);
 mock.module("./matchers", matchersMock);
 
 const downloads = await import("../src/services/monitor/downloads?test=monitor-downloads");
