@@ -4,15 +4,26 @@ import * as bgm from "../services/bgm";
 
 const searchRoutes = new Hono();
 
+function parseIntParam(value: string | undefined, min: number): number | null {
+  if (!value || !/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < min) return null;
+  return parsed;
+}
+
 // Search media (multi search)
 searchRoutes.get("/", async (c) => {
   const query = c.req.query("q");
-  const page = parseInt(c.req.query("page") || "1");
+  const pageParam = c.req.query("page");
+  const page = pageParam ? parseIntParam(pageParam, 1) : 1;
   const type = c.req.query("type"); // tv, movie, or undefined for multi
   const source = (c.req.query("source") || "tvdb").toLowerCase();
 
   if (!query) {
     return c.json({ error: "Missing query parameter 'q'" }, 400);
+  }
+  if (page === null) {
+    return c.json({ error: "Invalid query parameter 'page'" }, 400);
   }
 
   try {
@@ -67,7 +78,10 @@ searchRoutes.get("/", async (c) => {
 
 // Get TV show details
 searchRoutes.get("/tv/:id", async (c) => {
-  const id = parseInt(c.req.param("id"));
+  const id = parseIntParam(c.req.param("id"), 1);
+  if (id === null) {
+    return c.json({ error: "Invalid path parameter 'id'" }, 400);
+  }
   try {
     const detail = await tmdb.getTVDetail(id);
     return c.json(detail);
@@ -78,7 +92,10 @@ searchRoutes.get("/tv/:id", async (c) => {
 
 // Get movie details
 searchRoutes.get("/movie/:id", async (c) => {
-  const id = parseInt(c.req.param("id"));
+  const id = parseIntParam(c.req.param("id"), 1);
+  if (id === null) {
+    return c.json({ error: "Invalid path parameter 'id'" }, 400);
+  }
   try {
     const detail = await tmdb.getMovieDetail(id);
     return c.json(detail);
@@ -89,8 +106,14 @@ searchRoutes.get("/movie/:id", async (c) => {
 
 // Get TV season details
 searchRoutes.get("/tv/:id/season/:season", async (c) => {
-  const tvId = parseInt(c.req.param("id"));
-  const seasonNumber = parseInt(c.req.param("season"));
+  const tvId = parseIntParam(c.req.param("id"), 1);
+  const seasonNumber = parseIntParam(c.req.param("season"), 0);
+  if (tvId === null) {
+    return c.json({ error: "Invalid path parameter 'id'" }, 400);
+  }
+  if (seasonNumber === null) {
+    return c.json({ error: "Invalid path parameter 'season'" }, 400);
+  }
   try {
     const detail = await tmdb.getSeasonDetail(tvId, seasonNumber);
     return c.json(detail);

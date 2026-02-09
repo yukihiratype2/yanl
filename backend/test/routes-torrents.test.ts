@@ -37,6 +37,7 @@ const qbitMock = () => ({
     if (qbitShouldFail === "delete") throw new Error("delete failed");
     return true;
   },
+  testConnection: async () => ({ ok: true }),
   getTorrents: async () => [],
   mapQbitPathToLocal: (path: string) => path,
 });
@@ -188,5 +189,63 @@ describe("routes/torrents", () => {
       body: JSON.stringify({ hashes: ["x"] }),
     });
     expect(res.status).toBe(500);
+  });
+
+  it("returns 400 for malformed JSON bodies", async () => {
+    const malformedDownload = await routes.default.request("/download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{oops",
+    });
+    expect(malformedDownload.status).toBe(400);
+
+    const malformedPause = await routes.default.request("/pause", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{oops",
+    });
+    expect(malformedPause.status).toBe(400);
+
+    const malformedResume = await routes.default.request("/resume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{oops",
+    });
+    expect(malformedResume.status).toBe(400);
+
+    const malformedDelete = await routes.default.request("/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{oops",
+    });
+    expect(malformedDelete.status).toBe(400);
+  });
+
+  it("returns 400 for wrong hashes type", async () => {
+    const pause = await routes.default.request("/pause", {
+      method: "POST",
+      body: JSON.stringify({ hashes: "abc" }),
+    });
+    expect(pause.status).toBe(400);
+
+    const resume = await routes.default.request("/resume", {
+      method: "POST",
+      body: JSON.stringify({ hashes: "abc" }),
+    });
+    expect(resume.status).toBe(400);
+
+    const del = await routes.default.request("/delete", {
+      method: "POST",
+      body: JSON.stringify({ hashes: "abc", deleteFiles: "true" }),
+    });
+    expect(del.status).toBe(400);
+  });
+
+  it("returns 400 when /download is missing required fields", async () => {
+    const res = await routes.default.request("/download", {
+      method: "POST",
+      body: JSON.stringify({ title: "Missing fields" }),
+    });
+    expect(res.status).toBe(400);
   });
 });

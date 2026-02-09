@@ -141,4 +141,24 @@ describe("routes/search", () => {
     expect(res.status).toBe(500);
     expect(body.error).toContain("tmdb failed");
   });
+
+  it("returns 400 for invalid numeric page value", async () => {
+    const res = await routes.default.request("/?q=test&page=abc");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for invalid TV id", async () => {
+    const res = await routes.default.request("/tv/abc");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for invalid movie id", async () => {
+    const res = await routes.default.request("/movie/abc");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for invalid season number", async () => {
+    const res = await routes.default.request("/tv/1/season/xyz");
+    expect(res.status).toBe(400);
+  });
 });

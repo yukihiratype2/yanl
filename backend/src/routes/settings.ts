@@ -15,7 +15,16 @@ settingsRoutes.get("/", (c) => {
 
 // Update settings
 settingsRoutes.put("/", async (c) => {
-  const body = await c.req.json<Record<string, string>>();
+  let body: Record<string, string>;
+  try {
+    const parsed = await c.req.json<unknown>();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return c.json({ error: "Invalid JSON body" }, 400);
+    }
+    body = parsed as Record<string, string>;
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
   // Prevent changing api_token through this endpoint
   delete body.api_token;
   setSettings(body);
