@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   Tv,
   BookMarked,
   CalendarDays,
+  Server,
   Settings,
   Clapperboard,
   SlidersHorizontal,
@@ -17,6 +19,8 @@ const navItems = [
   { href: "/subscriptions", label: "Subscriptions", icon: BookMarked },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/profiles", label: "Profiles", icon: SlidersHorizontal },
+  { href: "/services", label: "Services", icon: Activity },
+  { href: "/mcp", label: "MCP", icon: Server },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

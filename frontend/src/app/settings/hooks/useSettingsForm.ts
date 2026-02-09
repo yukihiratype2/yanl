@@ -1,35 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Settings as SettingsIcon, Save, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getSettings,
   updateSettings,
   testQbitConnection,
   testAIConfig,
   getStoredToken,
-  setToken,
+  setToken as persistToken,
 } from "@/lib/api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/errors";
-import ApiTokenSection from "./components/ApiTokenSection";
-import AiSection from "./components/AiSection";
-import EjectTitleSection from "./components/EjectTitleSection";
-import LoggingSection from "./components/LoggingSection";
-import MediaDirectoriesSection from "./components/MediaDirectoriesSection";
-import NotifactionSection, {
-  type Notifaction,
-  type NotifactionEventType,
-} from "./components/NotifactionSection";
-import QbitSection from "./components/QbitSection";
-import TmdbSection from "./components/TmdbSection";
+import type {
+  Notifaction,
+  NotifactionEventType,
+} from "../components/NotifactionSection";
 
 type PathMapRow = {
   from: string;
   to: string;
 };
+
+type StatusMessage = { ok: boolean; message: string } | null;
 
 const NOTIFACTION_EVENT_TYPES: NotifactionEventType[] = [
   "media_released",
@@ -194,39 +185,30 @@ function serializePathMap(rows: PathMapRow[]): string {
   return JSON.stringify(cleaned);
 }
 
-export default function SettingsPage() {
+export function useSettingsForm() {
   const [settings, setSettingsState] = useState<Record<string, string>>({});
   const [token, setTokenState] = useState("");
   const [loading, setLoading] = useState(true);
   const [needsAuth, setNeedsAuth] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testingQbit, setTestingQbit] = useState(false);
-  const [qbitStatus, setQbitStatus] = useState<{
-    ok: boolean;
-    message: string;
-  } | null>(null);
+  const [qbitStatus, setQbitStatus] = useState<StatusMessage>(null);
   const [testingAI, setTestingAI] = useState(false);
-  const [aiStatus, setAiStatus] = useState<{ ok: boolean; message: string } | null>(null);
+  const [aiStatus, setAiStatus] = useState<StatusMessage>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pathMapRows, setPathMapRows] = useState<PathMapRow[]>([]);
   const [ejectRules, setEjectRules] = useState<string[]>([]);
   const [notifactions, setNotifactions] = useState<Notifaction[]>([]);
 
-  useEffect(() => {
-    const stored = getStoredToken();
-    setTokenState(stored);
-    loadSettings();
-  }, []);
-
-  async function loadSettings() {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
-      const s = await getSettings();
-      setSettingsState(s);
-      setPathMapRows(parsePathMap(s.qbit_path_map));
-      setEjectRules(parseEjectRules(s.eject_title_rules));
-      setNotifactions(parseNotifactions(s.notifactions));
+      const loaded = await getSettings();
+      setSettingsState(loaded);
+      setPathMapRows(parsePathMap(loaded.qbit_path_map));
+      setEjectRules(parseEjectRules(loaded.eject_title_rules));
+      setNotifactions(parseNotifactions(loaded.notifactions));
       setError(null);
       setNeedsAuth(false);
     } catch (err: unknown) {
@@ -244,58 +226,85 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  function handleChange(key: string, value: string) {
+  useEffect(() => {
+    setTokenState(getStoredToken());
+    void loadSettings();
+  }, [loadSettings]);
+
+  const handleChange = useCallback((key: string, value: string) => {
     setSettingsState((prev) => ({ ...prev, [key]: value }));
-  }
+  }, []);
 
-  function updatePathMapRows(nextRows: PathMapRow[]) {
-    setPathMapRows(nextRows);
-    handleChange("qbit_path_map", serializePathMap(nextRows));
-  }
+  const updatePathMapRows = useCallback(
+    (nextRows: PathMapRow[]) => {
+      setPathMapRows(nextRows);
+      handleChange("qbit_path_map", serializePathMap(nextRows));
+    },
+    [handleChange]
+  );
 
-  function updateEjectRules(nextRules: string[]) {
-    setEjectRules(nextRules);
-    const cleaned = nextRules.map((rule) => rule.trim()).filter(Boolean);
-    handleChange("eject_title_rules", JSON.stringify(cleaned));
-  }
+  const updateEjectRules = useCallback(
+    (nextRules: string[]) => {
+      setEjectRules(nextRules);
+      const cleaned = nextRules.map((rule) => rule.trim()).filter(Boolean);
+      handleChange("eject_title_rules", JSON.stringify(cleaned));
+    },
+    [handleChange]
+  );
 
-  function updateNotifactions(nextNotifactions: Notifaction[]) {
-    setNotifactions(nextNotifactions);
-    handleChange("notifactions", serializeNotifactions(nextNotifactions));
-  }
+  const updateNotifactions = useCallback(
+    (nextNotifactions: Notifaction[]) => {
+      setNotifactions(nextNotifactions);
+      handleChange("notifactions", serializeNotifactions(nextNotifactions));
+    },
+    [handleChange]
+  );
 
-  function handlePathMapChange(index: number, field: "from" | "to", value: string) {
-    updatePathMapRows(
-      pathMapRows.map((row, i) => (i === index ? { ...row, [field]: value } : row))
-    );
-  }
+  const handlePathMapChange = useCallback(
+    (index: number, field: "from" | "to", value: string) => {
+      updatePathMapRows(
+        pathMapRows.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+      );
+    },
+    [pathMapRows, updatePathMapRows]
+  );
 
-  function handleAddPathMap() {
+  const handleAddPathMap = useCallback(() => {
     updatePathMapRows([...pathMapRows, { from: "", to: "" }]);
-  }
+  }, [pathMapRows, updatePathMapRows]);
 
-  function handleRemovePathMap(index: number) {
-    updatePathMapRows(pathMapRows.filter((_, i) => i !== index));
-  }
+  const handleRemovePathMap = useCallback(
+    (index: number) => {
+      updatePathMapRows(pathMapRows.filter((_, i) => i !== index));
+    },
+    [pathMapRows, updatePathMapRows]
+  );
 
-  function handleAddEjectRule() {
+  const handleAddEjectRule = useCallback(() => {
     updateEjectRules([...ejectRules, ""]);
-  }
+  }, [ejectRules, updateEjectRules]);
 
-  function handleEjectRuleChange(index: number, value: string) {
-    updateEjectRules(ejectRules.map((rule, i) => (i === index ? value : rule)));
-  }
+  const handleEjectRuleChange = useCallback(
+    (index: number, value: string) => {
+      updateEjectRules(ejectRules.map((rule, i) => (i === index ? value : rule)));
+    },
+    [ejectRules, updateEjectRules]
+  );
 
-  function handleRemoveEjectRule(index: number) {
-    updateEjectRules(ejectRules.filter((_, i) => i !== index));
-  }
+  const handleRemoveEjectRule = useCallback(
+    (index: number) => {
+      updateEjectRules(ejectRules.filter((_, i) => i !== index));
+    },
+    [ejectRules, updateEjectRules]
+  );
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     try {
       setSaving(true);
       await updateSettings(settings);
+      setError(null);
       setSaveMessage("Settings saved successfully!");
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err: unknown) {
@@ -303,9 +312,9 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
-  }
+  }, [settings]);
 
-  async function handleTestQbit() {
+  const handleTestQbit = useCallback(async () => {
     try {
       setTestingQbit(true);
       setQbitStatus(null);
@@ -321,9 +330,9 @@ export default function SettingsPage() {
     } finally {
       setTestingQbit(false);
     }
-  }
+  }, []);
 
-  async function handleTestAI() {
+  const handleTestAI = useCallback(async () => {
     try {
       setTestingAI(true);
       setAiStatus(null);
@@ -334,115 +343,40 @@ export default function SettingsPage() {
     } finally {
       setTestingAI(false);
     }
-  }
+  }, []);
 
-  function handleTokenSave() {
-    setToken(token);
-    loadSettings();
-  }
+  const handleTokenSave = useCallback(() => {
+    persistToken(token);
+    void loadSettings();
+  }, [loadSettings, token]);
 
-  if (needsAuth && !loading) {
-    return (
-      <div className="max-w-md mx-auto mt-20">
-        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <SettingsIcon className="w-6 h-6" /> Setup
-        </h1>
-        <div className="bg-card rounded-xl p-6 border border-border">
-          <label className="block text-sm font-medium mb-2">API Token</label>
-          <p className="text-xs text-muted-foreground mb-4">
-            An API token is required for remote access. Local network access does not require a token.
-          </p>
-          <Input
-            type="text"
-            value={token}
-            onChange={(e) => setTokenState(e.target.value)}
-            placeholder="Your API token"
-          />
-          <Button
-            onClick={handleTokenSave}
-            className="mt-4 w-full"
-          >
-            Connect
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <SettingsIcon className="w-6 h-6" /> Settings
-        </h1>
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          Save Settings
-        </Button>
-      </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {saveMessage && (
-        <Alert className="mb-4 border-success/40 bg-success/10 text-success [&>svg]:text-success">
-          <AlertDescription>{saveMessage}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="space-y-6">
-        <ApiTokenSection
-          token={token}
-          onTokenChange={setTokenState}
-          onTokenSave={handleTokenSave}
-        />
-        <QbitSection
-          settings={settings}
-          onChange={handleChange}
-          pathMapRows={pathMapRows}
-          onPathMapChange={handlePathMapChange}
-          onAddPathMap={handleAddPathMap}
-          onRemovePathMap={handleRemovePathMap}
-          onTestConnection={handleTestQbit}
-          testing={testingQbit}
-          status={qbitStatus}
-        />
-        <TmdbSection settings={settings} onChange={handleChange} />
-        <AiSection
-          settings={settings}
-          onChange={handleChange}
-          onTest={handleTestAI}
-          testing={testingAI}
-          status={aiStatus}
-        />
-        <EjectTitleSection
-          rules={ejectRules}
-          onAdd={handleAddEjectRule}
-          onChange={handleEjectRuleChange}
-          onRemove={handleRemoveEjectRule}
-        />
-        <MediaDirectoriesSection settings={settings} onChange={handleChange} />
-        <LoggingSection settings={settings} onChange={handleChange} />
-        <NotifactionSection notifactions={notifactions} onChange={updateNotifactions} />
-      </div>
-    </div>
-  );
+  return {
+    settings,
+    token,
+    loading,
+    needsAuth,
+    saving,
+    testingQbit,
+    qbitStatus,
+    testingAI,
+    aiStatus,
+    saveMessage,
+    error,
+    pathMapRows,
+    ejectRules,
+    notifactions,
+    setTokenState,
+    handleChange,
+    handlePathMapChange,
+    handleAddPathMap,
+    handleRemovePathMap,
+    handleAddEjectRule,
+    handleEjectRuleChange,
+    handleRemoveEjectRule,
+    updateNotifactions,
+    handleSave,
+    handleTestQbit,
+    handleTestAI,
+    handleTokenSave,
+  };
 }
