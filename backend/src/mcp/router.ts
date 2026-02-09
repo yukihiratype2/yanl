@@ -17,6 +17,8 @@ import {
   createSubscriptionWithEpisodes,
   deleteSubscriptionWithCleanup,
 } from "../actions/subscriptions";
+import * as bgm from "../services/bgm";
+import * as tmdb from "../services/tmdb";
 
 const server = new Server(
   { name: "nas-tools", version: "1.0.0" },
@@ -33,8 +35,64 @@ const text = (payload: unknown) => ({
   content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
 });
 
+const parsePositiveInt = (value: unknown): number | null => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || !Number.isSafeInteger(parsed) || parsed < 1) {
+    return null;
+  }
+  return parsed;
+};
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
+    {
+      name: "search_media",
+      description: "Search TMDB or Bangumi media.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          type: { type: "string", enum: ["tv", "movie", "multi"] },
+          source: { type: "string", enum: ["tvdb", "bgm"] },
+          page: { type: "number", minimum: 1 },
+        },
+        required: ["query"],
+      },
+    },
+    {
+      name: "get_tv_detail",
+      description: "Get TMDB TV show detail.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          id: { type: "number" },
+        },
+        required: ["id"],
+      },
+    },
+    {
+      name: "get_movie_detail",
+      description: "Get TMDB movie detail.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          id: { type: "number" },
+        },
+        required: ["id"],
+      },
+    },
+    {
+      name: "get_tv_season_detail",
+      description: "Get TMDB TV season detail.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          id: { type: "number" },
+          season: { type: "number" },
+        },
+        required: ["id", "season"],
+      },
+    },
     {
       name: "list_subscriptions",
       description: "List subscriptions, optionally filtering by status.",
@@ -111,6 +169,128 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   switch (name) {
+    case "search_media": {
+      const query = typeof args?.query === "string" ? args.query.trim() : "";
+      if (!query) {
+        return text({ error: "Missing or invalid query" });
+      }
+      const type = typeof args?.type === "string" ? args.type : "multi";
+      if (type !== "tv" && type !== "movie" && type !== "multi") {
+        return text({ error: "Invalid type" });
+      }
+      const source = typeof args?.source === "string" ? args.source : "tvdb";
+      if (source !== "tvdb" && source !== "bgm") {
+        return text({ error: "Invalid source" });
+      }
+      const page = args?.page === undefined ? 1 : parsePositiveInt(args.page);
+      if (page === null) {
+        return text({ error: "Invalid page" });
+      }
+
+      try {
+        if (source === "bgm") {
+          const limit = 20;
+          const offset = (page - 1) * limit;
+          const bgmRes = await bgm.searchSubjects(query, {
+            limit,
+            offset,
+            types: [2, 6],
+          });
+          const totalPages =
+            bgmRes.limit > 0 ? Math.ceil(bgmRes.total / bgmRes.limit) : 1;
+          return text({
+            page,
+            results: bgmRes.data.map((item) => ({
+              id: item.id,
+              title: item.name_cn || item.name,
+              name: item.name_cn || item.name,
+              original_name: item.name,
+              overview: item.summary || "",
+              poster_path: item.images?.medium ?? item.images?.small ?? null,
+              backdrop_path: item.images?.large ?? null,
+              first_air_date: item.date ?? null,
+              vote_average: item.rating?.score ?? 0,
+              media_type: "tv",
+              source: "bgm",
+            })),
+            total_pages: totalPages,
+            total_results: bgmRes.total,
+          });
+        }
+
+        let results;
+        switch (type) {
+          case "tv":
+            results = await tmdb.searchTV(query, page);
+            break;
+          case "movie":
+            results = await tmdb.searchMovie(query, page);
+            break;
+          default:
+            results = await tmdb.searchMulti(query, page);
+            break;
+        }
+        return text({
+          ...results,
+          results: results.results.map((item) => ({
+            ...item,
+            media_type: item.media_type ?? (type === "multi" ? undefined : type),
+            source: "tvdb",
+          })),
+        });
+      } catch (error: any) {
+        return text({ error: error.message });
+      }
+    }
+
+    case "get_tv_detail": {
+      const id = parsePositiveInt(args?.id);
+      if (id === null) {
+        return text({ error: "Missing or invalid id" });
+      }
+      try {
+        const detail = await tmdb.getTVDetail(id);
+        return text({ ...detail, source: "tvdb", media_type: "tv" });
+      } catch (error: any) {
+        return text({ error: error.message });
+      }
+    }
+
+    case "get_movie_detail": {
+      const id = parsePositiveInt(args?.id);
+      if (id === null) {
+        return text({ error: "Missing or invalid id" });
+      }
+      try {
+        const detail = await tmdb.getMovieDetail(id);
+        return text({ ...detail, source: "tvdb", media_type: "movie" });
+      } catch (error: any) {
+        return text({ error: error.message });
+      }
+    }
+
+    case "get_tv_season_detail": {
+      const id = parsePositiveInt(args?.id);
+      const season = parsePositiveInt(args?.season);
+      if (id === null) {
+        return text({ error: "Missing or invalid id" });
+      }
+      if (season === null) {
+        return text({ error: "Missing or invalid season" });
+      }
+      try {
+        const detail = await tmdb.getSeasonDetail(id, season);
+        return text({
+          ...detail,
+          tv_id: id,
+          source: "tvdb",
+          media_type: "tv",
+        });
+      } catch (error: any) {
+        return text({ error: error.message });
+      }
+    }
+
     case "list_subscriptions": {
       const status = typeof args?.status === "string" ? args.status : "all";
       const subs =
