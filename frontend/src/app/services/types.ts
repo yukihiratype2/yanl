@@ -3,8 +3,6 @@ export type IntegrationKey =
   | "ai"
   | "tmdb"
   | "bgm"
-  | "mikan"
-  | "dmhy"
   | "notifaction";
 
 export type IntegrationHealth =

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import {
   getSubscription,
@@ -100,9 +101,11 @@ export default function SubscriptionDetailPage() {
       {!loading && subscription && (
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <div className="p-4 md:p-6 flex flex-col md:flex-row gap-6">
-            <img
+            <Image
               src={tmdbImage(subscription.poster_path, "w342")}
               alt={subscription.title}
+              width={176}
+              height={264}
               className="w-32 md:w-44 rounded-lg object-cover aspect-[2/3]"
             />
             <div className="flex-1 min-w-0">
