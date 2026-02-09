@@ -1,11 +1,11 @@
-import { describe, expect, it, mock } from "bun:test";
-import { modulePath } from "./mockPath";
+import { describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
-mock.module(modulePath("../src/services/fileManager"), () => ({
-  findVideoFiles: () => ["/tmp/video.mkv"],
-}));
-
-const utils = await import("../src/services/monitor/utils?test=monitor-utils");
+const utils = await import(
+  `../src/services/monitor/utils?test=monitor-utils-${Date.now()}-${Math.random()}`
+);
 
 describe("monitor/utils", () => {
   it("parses magnet hashes", () => {
@@ -21,6 +21,14 @@ describe("monitor/utils", () => {
   });
 
   it("selects primary video file", () => {
-    expect(utils.selectPrimaryVideoFile("/tmp")).toBe("/tmp/video.mkv");
+    const dir = mkdtempSync(join(tmpdir(), "monitor-utils-"));
+    const videoPath = join(dir, "video.mkv");
+
+    try {
+      writeFileSync(videoPath, "test");
+      expect(utils.selectPrimaryVideoFile(dir)).toBe(videoPath);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
