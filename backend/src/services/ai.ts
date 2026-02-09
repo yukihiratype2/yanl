@@ -34,7 +34,18 @@ async function callChatCompletion(
   temperature: number
 ): Promise<string | null> {
   const endpoint = buildChatEndpoint(configUrl);
+  const start = Date.now();
   try {
+    logger.debug(
+      {
+        op: "integration.ai.request",
+        provider: "ai",
+        endpoint,
+        model,
+        messageCount: messages.length,
+      },
+      "AI API request"
+    );
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -49,13 +60,46 @@ async function callChatCompletion(
     });
 
     if (!response.ok) {
+      logger.warn(
+        {
+          op: "integration.ai.response_error",
+          provider: "ai",
+          endpoint,
+          model,
+          status: response.status,
+          durationMs: Date.now() - start,
+        },
+        "AI API response was not OK"
+      );
       throw new Error(`AI API failed: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    logger.debug(
+      {
+        op: "integration.ai.response",
+        provider: "ai",
+        endpoint,
+        model,
+        status: response.status,
+        durationMs: Date.now() - start,
+      },
+      "AI API response received"
+    );
     reportIntegrationSuccess("ai", "Last AI API call succeeded");
     return data.choices?.[0]?.message?.content?.trim() ?? null;
   } catch (error) {
+    logger.error(
+      {
+        op: "integration.ai.request_error",
+        provider: "ai",
+        endpoint,
+        model,
+        durationMs: Date.now() - start,
+        err: error,
+      },
+      "AI API request failed"
+    );
     reportIntegrationFailure("ai", error, "AI API call failed");
     throw error;
   }
@@ -86,7 +130,10 @@ export async function parseTorrentTitles(
 ): Promise<AITitleParse[] | null> {
   const config = loadConfig();
   if (!config.ai.api_url || !config.ai.api_token) {
-    logger.warn("AI config missing. Skipping AI parsing.");
+    logger.warn(
+      { op: "integration.ai.config_missing", provider: "ai" },
+      "AI config missing. Skipping AI parsing."
+    );
     return null;
   }
 
@@ -156,7 +203,15 @@ Example response for 2 titles:
     if (!Array.isArray(parsed)) return null;
     return parsed as AITitleParse[];
   } catch (error) {
-    logger.error({ err: error }, "Error parsing titles with AI");
+    logger.error(
+      {
+        op: "integration.ai.parse_titles_failed",
+        provider: "ai",
+        titleCount: titles.length,
+        err: error,
+      },
+      "Error parsing titles with AI"
+    );
     return null;
   }
 }

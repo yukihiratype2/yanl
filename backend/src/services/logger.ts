@@ -1,9 +1,53 @@
 import pino from "pino";
-import { mkdirSync } from "fs";
-import { isAbsolute, join } from "path";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 import { loadConfig } from "../config";
 
+type LogContext = Record<string, unknown>;
+
+const LOG_SERVICE_NAME = "nas-tools-backend";
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,200}$/;
+const REDACT_PATHS: string[] = [
+  "authorization",
+  "cookie",
+  "token",
+  "apiToken",
+  "api_token",
+  "password",
+  "qbit_password",
+  "ai_api_token",
+  "headers.authorization",
+  "headers.cookie",
+  "req.headers.authorization",
+  "req.headers.cookie",
+  "req.query.apikey",
+  "req.query.token",
+  'headers["x-api-key"]',
+  'req.headers["x-api-key"]',
+  "*.authorization",
+  "*.cookie",
+  "*.token",
+  "*.apiToken",
+  "*.api_token",
+  "*.password",
+  "*.qbit_password",
+  "*.ai_api_token",
+  "*.*.token",
+  "*.*.apiToken",
+  "*.*.api_token",
+  "*.*.password",
+  "*.*.qbit_password",
+  "*.*.ai_api_token",
+];
+
+const logContextStorage = new AsyncLocalStorage<LogContext>();
 let currentDestination: any | null = null;
+
+function getLogContext(): LogContext {
+  return logContextStorage.getStore() ?? {};
+}
 
 function resolveLogDir(dir: string): string {
   if (!dir) return join(process.cwd(), "log");
@@ -42,9 +86,42 @@ function buildLogger(): pino.Logger {
     {
       level,
       timestamp: pino.stdTimeFunctions.isoTime,
+      redact: {
+        paths: REDACT_PATHS,
+        censor: "[REDACTED]",
+      },
+      mixin() {
+        return {
+          ...getLogContext(),
+          service: LOG_SERVICE_NAME,
+        };
+      },
     },
     destination
   );
+}
+
+export function withLogContext<T>(context: LogContext, fn: () => T): T {
+  const nextContext = {
+    ...getLogContext(),
+    ...context,
+  };
+  return logContextStorage.run(nextContext, fn);
+}
+
+export function createRequestId(incoming?: string | null): string {
+  const candidate = typeof incoming === "string" ? incoming.trim() : "";
+  if (candidate && REQUEST_ID_PATTERN.test(candidate)) {
+    return candidate;
+  }
+  return `req-${randomUUID()}`;
+}
+
+export function maskToken(token: string | null | undefined): string {
+  const value = (token || "").trim();
+  if (!value) return "(empty)";
+  if (value.length <= 4) return "*".repeat(value.length);
+  return `${"*".repeat(Math.min(8, value.length - 4))}${value.slice(-4)}`;
 }
 
 export let logger = buildLogger();

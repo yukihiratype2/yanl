@@ -25,7 +25,13 @@ export async function monitorDownloads() {
   try {
     qbitTorrents = await qbittorrent.getManagedQbitTorrents();
   } catch (err) {
-    logger.error({ err }, "QBit connection validation failed");
+    logger.error(
+      {
+        op: "monitor.download_monitor.qbit_fetch_failed",
+        err,
+      },
+      "QBit connection validation failed"
+    );
     return;
   }
 
@@ -73,7 +79,17 @@ async function handleDownloadingEpisode(
   const torrent = findTorrentByHash(qbitTorrents, ep.torrent_hash);
   if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
-  logger.info({ subscription: sub.title, episode: ep.title }, "Episode download complete");
+  logger.info(
+    {
+      op: "monitor.download_monitor.episode_download_complete",
+      subscriptionId: sub.id,
+      subscription: sub.title,
+      episodeId: ep.id,
+      episode: ep.title,
+      torrentHash: ep.torrent_hash,
+    },
+    "Episode download complete"
+  );
   emitNotifactionEvent({
     type: "download_completed",
     subscription: {
@@ -136,7 +152,20 @@ async function handleDownloadingEpisode(
       episode: ep.title,
     });
   } catch (err) {
-    logger.error({ err }, "Episode file move error");
+    logger.error(
+      {
+        op: "monitor.download_monitor.episode_file_move_failed",
+        subscriptionId: sub.id,
+        subscription: sub.title,
+        episodeId: ep.id,
+        episode: ep.title,
+        torrentHash: ep.torrent_hash,
+        contentPath,
+        sourceFile,
+        err,
+      },
+      "Episode file move error"
+    );
   }
 }
 
@@ -187,7 +216,15 @@ async function handleDownloadingMovie(
   const torrent = findTorrentByHash(qbitTorrents, activeTorrentRecord.hash);
   if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
-  logger.info({ subscription: sub.title }, "Movie download complete");
+  logger.info(
+    {
+      op: "monitor.download_monitor.movie_download_complete",
+      subscriptionId: sub.id,
+      subscription: sub.title,
+      torrentHash: activeTorrentRecord.hash,
+    },
+    "Movie download complete"
+  );
   emitNotifactionEvent({
     type: "download_completed",
     subscription: {
@@ -233,7 +270,18 @@ async function handleDownloadingMovie(
       subscription: sub.title,
     });
   } catch (err) {
-    logger.error({ err }, "Movie file move error");
+    logger.error(
+      {
+        op: "monitor.download_monitor.movie_file_move_failed",
+        subscriptionId: sub.id,
+        subscription: sub.title,
+        torrentHash: activeTorrentRecord.hash,
+        contentPath,
+        sourceFile,
+        err,
+      },
+      "Movie file move error"
+    );
   }
 }
 

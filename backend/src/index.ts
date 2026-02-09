@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger as honoLogger } from "hono/logger";
+import { HTTPException } from "hono/http-exception";
 import { initDatabase } from "./db";
 import { authMiddleware } from "./middleware/auth";
 import settingsRoutes from "./routes/settings";
@@ -16,7 +16,7 @@ import { registerMcpRoutes } from "./mcp/router";
 import { getSetting } from "./db/settings";
 import { startMonitor } from "./services/monitor";
 import { startIntegrationHealthMonitor } from "./services/integration-health";
-import { logger } from "./services/logger";
+import { createRequestId, logger, maskToken, withLogContext } from "./services/logger";
 
 // Initialize database
 initDatabase();
@@ -25,16 +25,73 @@ initDatabase();
 startMonitor();
 startIntegrationHealthMonitor();
 
-const app = new Hono();
+const app = new Hono<{ Variables: { requestId: string } }>();
 
 // Global middleware
 app.use("*", cors());
-app.use(
-  "*",
-  honoLogger((message, ...rest) => {
-    logger.trace({ rest }, message);
-  })
-);
+app.use("*", async (c, next) => {
+  const requestId = createRequestId(c.req.header("x-request-id"));
+  const method = c.req.method;
+  const path = c.req.path;
+  const start = Date.now();
+
+  c.set("requestId", requestId);
+  c.header("X-Request-Id", requestId);
+
+  return withLogContext({ requestId }, async () => {
+    let hasError = false;
+    try {
+      await next();
+    } catch (err) {
+      hasError = true;
+      throw err;
+    } finally {
+      c.header("X-Request-Id", requestId);
+      logger.trace(
+        {
+          op: "http.access",
+          method,
+          path,
+          status: hasError ? 500 : c.res.status,
+          durationMs: Date.now() - start,
+        },
+        hasError ? "HTTP request failed" : "HTTP request completed"
+      );
+    }
+  });
+});
+
+app.onError((err, c) => {
+  const requestId =
+    c.get("requestId") ||
+    createRequestId(c.req.header("x-request-id"));
+  const method = c.req.method;
+  const path = c.req.path;
+  const status = err instanceof HTTPException ? err.status : 500;
+
+  return withLogContext({ requestId }, () => {
+    logger.error(
+      {
+        op: "http.unhandled_error",
+        method,
+        path,
+        status,
+        err,
+      },
+      "Unhandled HTTP error"
+    );
+
+    if (err instanceof HTTPException) {
+      const response = err.getResponse();
+      response.headers.set("X-Request-Id", requestId);
+      return response;
+    }
+
+    const response = c.text("Internal Server Error", 500);
+    response.headers.set("X-Request-Id", requestId);
+    return response;
+  });
+});
 
 // Health check (no auth)
 app.get("/health", (c) => c.json({ status: "ok" }));
@@ -58,8 +115,21 @@ registerMcpRoutes(app);
 
 const port = parseInt(process.env.PORT || "3001");
 
-logger.info(`NAS Tools Backend running on http://localhost:${port}`);
-logger.info(`API Token: ${getSetting("api_token")}`);
+logger.info(
+  {
+    op: "server.start",
+    port,
+    url: `http://localhost:${port}`,
+  },
+  "NAS Tools Backend running"
+);
+logger.info(
+  {
+    op: "auth.token_loaded",
+    maskedApiToken: maskToken(getSetting("api_token")),
+  },
+  "API token loaded"
+);
 
 export default {
   port,

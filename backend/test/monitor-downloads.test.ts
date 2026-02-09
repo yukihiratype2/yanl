@@ -7,6 +7,7 @@ const updates: any[] = [];
 const createdTorrents: any[] = [];
 const rssCalls: Array<{ title: string; opts: any }> = [];
 const loggerCalls: Array<{ level: string; args: any[] }> = [];
+let addTorrentShouldFail = false;
 
 let subscriptions: any[] = [];
 let episodesBySubscription: Record<number, any[]> = {};
@@ -59,7 +60,10 @@ mock.module("../rss", rssMock);
 const qbitMock = () => ({
   qbittorrent: {
     getQbitDownloadDir: () => "/downloads",
-    addTorrentByUrl: async () => true,
+    addTorrentByUrl: async () => {
+      if (addTorrentShouldFail) throw new Error("add failed");
+      return true;
+    },
     getManagedQbitTags: () => new Set<string>(),
     getManagedQbitTorrents: async () => [],
     hasManagedQbitTag: () => false,
@@ -116,6 +120,7 @@ describe("monitor/downloads", () => {
     rssCalls.length = 0;
     loggerCalls.length = 0;
     notifactionCalls.length = 0;
+    addTorrentShouldFail = false;
     subscriptions = [
       {
         id: 1,
@@ -196,5 +201,22 @@ describe("monitor/downloads", () => {
       (entry) => entry.type === "media_released"
     );
     expect(releaseCalls.length).toBe(1);
+  });
+
+  it("logs enriched context when adding an episode torrent fails", async () => {
+    addTorrentShouldFail = true;
+    await downloads.searchAndDownload();
+
+    const errorLog = loggerCalls.find(
+      (entry) =>
+        entry.level === "error" &&
+        entry.args[0]?.op === "monitor.downloads.add_episode_torrent_failed"
+    );
+    expect(errorLog).toBeTruthy();
+    expect(errorLog?.args[0]?.subscriptionId).toBe(1);
+    expect(errorLog?.args[0]?.episodeId).toBe(10);
+    expect(errorLog?.args[0]?.torrentHash).toBe("abc");
+    expect(errorLog?.args[0]?.title).toBe("Show");
+    expect(String(errorLog?.args[0]?.err?.message || "")).toContain("add failed");
   });
 });

@@ -3,6 +3,7 @@ import {
   reportIntegrationFailure,
   reportIntegrationSuccess,
 } from "./integration-health";
+import { logger } from "./logger";
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -99,8 +100,18 @@ function getToken(): string {
 }
 
 async function tmdbFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+  const start = Date.now();
   try {
     const token = getToken();
+    logger.debug(
+      {
+        op: "integration.tmdb.request",
+        provider: "tmdb",
+        path,
+        params: params || null,
+      },
+      "TMDB API request"
+    );
     const url = new URL(`${TMDB_BASE_URL}${path}`);
     if (params) {
       for (const [key, value] of Object.entries(params)) {
@@ -116,12 +127,45 @@ async function tmdbFetch<T>(path: string, params?: Record<string, string>): Prom
     });
 
     if (!response.ok) {
+      logger.warn(
+        {
+          op: "integration.tmdb.response_error",
+          provider: "tmdb",
+          path,
+          params: params || null,
+          status: response.status,
+          durationMs: Date.now() - start,
+        },
+        "TMDB API response was not OK"
+      );
       throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
     }
 
+    logger.debug(
+      {
+        op: "integration.tmdb.response",
+        provider: "tmdb",
+        path,
+        params: params || null,
+        status: response.status,
+        durationMs: Date.now() - start,
+      },
+      "TMDB API response received"
+    );
     reportIntegrationSuccess("tmdb", "Last TMDB API call succeeded");
     return response.json() as Promise<T>;
   } catch (error) {
+    logger.error(
+      {
+        op: "integration.tmdb.request_error",
+        provider: "tmdb",
+        path,
+        params: params || null,
+        durationMs: Date.now() - start,
+        err: error,
+      },
+      "TMDB API request failed"
+    );
     reportIntegrationFailure("tmdb", error, "TMDB API call failed");
     throw error;
   }

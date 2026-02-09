@@ -318,9 +318,12 @@ export class QbittorrentService {
   private async login(baseUrl: string): Promise<string> {
     const username = getSetting("qbit_username") || "admin";
     const password = getSetting("qbit_password") || "";
+    const path = "/api/v2/auth/login";
+    const method = "POST";
+    const start = Date.now();
 
-    logger.info(
-      { path: "/api/v2/auth/login", method: "POST" },
+    logger.debug(
+      { op: "integration.qbit.request", provider: "qbit", path, method },
       "qBittorrent API request"
     );
     const params = new URLSearchParams();
@@ -340,27 +343,50 @@ export class QbittorrentService {
       });
     } catch (err) {
       logger.error(
-        { path: "/api/v2/auth/login", method: "POST", err },
+        {
+          op: "integration.qbit.request_error",
+          provider: "qbit",
+          path,
+          method,
+          durationMs: Date.now() - start,
+          err,
+        },
         "qBittorrent request failed"
       );
       reportIntegrationFailure("qbit", err, "qBittorrent login request failed");
       throw err;
     }
 
-    logger.info(
-      { path: "/api/v2/auth/login", method: "POST", status: response.status },
+    logger.debug(
+      {
+        op: "integration.qbit.response",
+        provider: "qbit",
+        path,
+        method,
+        status: response.status,
+        durationMs: Date.now() - start,
+      },
       "qBittorrent API response"
     );
 
     if (!response.ok) {
+      const loginError = new Error(
+        `qBittorrent login failed: ${response.status} ${response.statusText}`
+      );
       logger.error(
-        { path: "/api/v2/auth/login", method: "POST", status: response.status },
+        {
+          op: "integration.qbit.login_failed",
+          provider: "qbit",
+          path,
+          method,
+          status: response.status,
+          durationMs: Date.now() - start,
+          err: loginError,
+        },
         "qBittorrent login failed"
       );
       // qBittorrent returns 403 for banned IP
-      throw new Error(
-        `qBittorrent login failed: ${response.status} ${response.statusText}`
-      );
+      throw loginError;
     }
 
     const setCookie = response.headers.get("set-cookie");
@@ -391,7 +417,19 @@ export class QbittorrentService {
       return this.sid;
     }
 
-    throw new Error("qBittorrent login failed: no SID returned");
+    const missingSidError = new Error("qBittorrent login failed: no SID returned");
+    logger.error(
+      {
+        op: "integration.qbit.login_sid_missing",
+        provider: "qbit",
+        path,
+        method,
+        durationMs: Date.now() - start,
+        err: missingSidError,
+      },
+      "qBittorrent login failed: no SID returned"
+    );
+    throw missingSidError;
   }
 
   private async ensureLoggedIn(baseUrl: string): Promise<string> {
@@ -434,13 +472,17 @@ export class QbittorrentService {
       ...(options.headers as Record<string, string>),
     };
     const method = (options.method || "GET").toString().toUpperCase();
+    const start = Date.now();
     headers.Referer = baseUrl;
 
     if (this.sid) {
       headers["Cookie"] = `SID=${this.sid}`;
     }
 
-    logger.info({ path, method }, "qBittorrent API request");
+    logger.debug(
+      { op: "integration.qbit.request", provider: "qbit", path, method },
+      "qBittorrent API request"
+    );
     let response: Response;
     try {
       response = await fetch(`${baseUrl}${path}`, {
@@ -448,7 +490,17 @@ export class QbittorrentService {
         headers,
       });
     } catch (err) {
-      logger.error({ path, method, err }, "qBittorrent request failed");
+      logger.error(
+        {
+          op: "integration.qbit.request_error",
+          provider: "qbit",
+          path,
+          method,
+          durationMs: Date.now() - start,
+          err,
+        },
+        "qBittorrent request failed"
+      );
       reportIntegrationFailure("qbit", err, "qBittorrent request failed");
       throw err;
     }
@@ -457,7 +509,12 @@ export class QbittorrentService {
     // Note: 403 can also mean "Forbidden" for other reasons, but commonly it's session expiry.
     if (response.status === 403) {
       logger.warn(
-        { path, method },
+        {
+          op: "integration.qbit.session_refresh",
+          provider: "qbit",
+          path,
+          method,
+        },
         "qBittorrent returned 403, refreshing session"
       );
       this.sid = null;
@@ -474,15 +531,47 @@ export class QbittorrentService {
           headers,
         });
       } catch (err) {
-        logger.error({ path, method, err }, "qBittorrent retry failed");
+        logger.error(
+          {
+            op: "integration.qbit.retry_error",
+            provider: "qbit",
+            path,
+            method,
+            durationMs: Date.now() - start,
+            err,
+          },
+          "qBittorrent retry failed"
+        );
         reportIntegrationFailure("qbit", err, "qBittorrent retry failed");
         throw err;
       }
     }
 
-    logger.info({ path, method, status: response.status }, "qBittorrent API response");
+    logger.debug(
+      {
+        op: "integration.qbit.response",
+        provider: "qbit",
+        path,
+        method,
+        status: response.status,
+        durationMs: Date.now() - start,
+      },
+      "qBittorrent API response"
+    );
     if (!response.ok) {
-      logger.error({ path, method, status: response.status }, "qBittorrent API error");
+      const apiError = new Error(`qBittorrent API error: HTTP ${response.status}`);
+      logger.error(
+        {
+          op: "integration.qbit.api_error",
+          provider: "qbit",
+          path,
+          method,
+          status: response.status,
+          durationMs: Date.now() - start,
+          err: apiError,
+        },
+        "qBittorrent API error"
+      );
       reportIntegrationFailure(
         "qbit",
         `HTTP ${response.status}`,
@@ -653,9 +742,15 @@ export class QbittorrentService {
 
     const ok = await this.deleteTorrents(torrent.hash, true);
     if (ok) {
-      logger.info({ ...context, hash: torrent.hash }, "Removed qBittorrent torrent and files");
+      logger.info(
+        { op: "integration.qbit.cleanup_removed", ...context, hash: torrent.hash },
+        "Removed qBittorrent torrent and files"
+      );
     } else {
-      logger.warn({ ...context, hash: torrent.hash }, "Failed to remove qBittorrent torrent");
+      logger.warn(
+        { op: "integration.qbit.cleanup_failed", ...context, hash: torrent.hash },
+        "Failed to remove qBittorrent torrent"
+      );
     }
   }
 

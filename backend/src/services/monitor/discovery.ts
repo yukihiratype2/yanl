@@ -19,14 +19,32 @@ export async function checkNewEpisodes() {
       try {
         await processTVSubscription(sub);
       } catch (err) {
-        logger.error({ subscription: sub.title, err }, "Error processing TV subscription");
+        logger.error(
+          {
+            op: "monitor.discovery.tv_subscription_failed",
+            subscriptionId: sub.id,
+            subscription: sub.title,
+            sourceId: sub.source_id,
+            err,
+          },
+          "Error processing TV subscription"
+        );
       }
     }
     if (sub.source === "bgm" && sub.media_type !== "movie") {
       try {
         await processBgmSubscription(sub);
       } catch (err) {
-        logger.error({ subscription: sub.title, err }, "Error processing BGM subscription");
+        logger.error(
+          {
+            op: "monitor.discovery.bgm_subscription_failed",
+            subscriptionId: sub.id,
+            subscription: sub.title,
+            sourceId: sub.source_id,
+            err,
+          },
+          "Error processing BGM subscription"
+        );
       }
     }
     // Movies are single-item, handled by status check usually.
@@ -103,6 +121,8 @@ async function processTVSubscription(sub: Subscription) {
     ) {
       logger.info(
         {
+          op: "monitor.discovery.new_episode",
+          subscriptionId: sub.id,
           subscription: sub.title,
           season: seasonData.season_number,
           episode: ep.episode_number,

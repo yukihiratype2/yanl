@@ -11,6 +11,7 @@ import {
   createSubscriptionWithEpisodes,
   deleteSubscriptionWithCleanup,
 } from "../actions/subscriptions";
+import { logger } from "../services/logger";
 
 const subscriptionRoutes = new Hono();
 
@@ -35,70 +36,111 @@ subscriptionRoutes.get("/:id", (c) => {
 
 // Subscribe to a media
 subscriptionRoutes.post("/", async (c) => {
-  const body = await c.req.json<{
-    source?: "tvdb" | "bgm";
-    source_id?: number;
-    tmdb_id?: number;
-    media_type: "anime" | "tv" | "movie";
-    season_number?: number;
-    profile_id?: number | null;
-  }>();
-  const result = await createSubscriptionWithEpisodes(body);
-  if (!result.ok) {
-    return c.json({ error: result.error, ...(result.details || {}) }, result.status);
+  try {
+    const body = await c.req.json<{
+      source?: "tvdb" | "bgm";
+      source_id?: number;
+      tmdb_id?: number;
+      media_type: "anime" | "tv" | "movie";
+      season_number?: number;
+      profile_id?: number | null;
+    }>();
+    const result = await createSubscriptionWithEpisodes(body);
+    if (!result.ok) {
+      return c.json({ error: result.error, ...(result.details || {}) }, result.status);
+    }
+    return c.json(result.data, 201);
+  } catch (error) {
+    logger.error(
+      {
+        op: "subscriptions.create_failed",
+        method: c.req.method,
+        path: c.req.path,
+        err: error,
+      },
+      "Subscription create route failed"
+    );
+    throw error;
   }
-  return c.json(result.data, 201);
 });
 
 // Update subscription
 subscriptionRoutes.patch("/:id", async (c) => {
   const id = parseInt(c.req.param("id"));
-  const sub = getSubscriptionById(id);
-  if (!sub) return c.json({ error: "Subscription not found" }, 404);
+  try {
+    const sub = getSubscriptionById(id);
+    if (!sub) return c.json({ error: "Subscription not found" }, 404);
 
-  const body = await c.req.json<{ status?: "active" | "disabled" }>();
-  if (!body.status) {
-    return c.json({ error: "Missing status" }, 400);
+    const body = await c.req.json<{ status?: "active" | "disabled" }>();
+    if (!body.status) {
+      return c.json({ error: "Missing status" }, 400);
+    }
+    if (!["active", "disabled"].includes(body.status)) {
+      return c.json({ error: "Invalid status" }, 400);
+    }
+    updateSubscription(id, { status: body.status });
+    return c.json({ success: true });
+  } catch (error) {
+    logger.error(
+      {
+        op: "subscriptions.patch_failed",
+        method: c.req.method,
+        path: c.req.path,
+        subscriptionId: id,
+        err: error,
+      },
+      "Subscription patch route failed"
+    );
+    throw error;
   }
-  if (!["active", "disabled"].includes(body.status)) {
-    return c.json({ error: "Invalid status" }, 400);
-  }
-  updateSubscription(id, { status: body.status });
-  return c.json({ success: true });
 });
 
 // Delete subscription
 subscriptionRoutes.delete("/:id", async (c) => {
   const id = parseInt(c.req.param("id"));
-  const sub = getSubscriptionById(id);
-  if (!sub) return c.json({ error: "Subscription not found" }, 404);
+  try {
+    const sub = getSubscriptionById(id);
+    if (!sub) return c.json({ error: "Subscription not found" }, 404);
 
-  const parseBool = (value: string | undefined | null) => {
-    if (!value) return false;
-    return ["1", "true", "yes", "on"].includes(value.toLowerCase());
-  };
+    const parseBool = (value: string | undefined | null) => {
+      if (!value) return false;
+      return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+    };
 
-  const deleteFilesQuery = parseBool(
-    c.req.query("delete_files_on_disk") ?? c.req.query("delete_files")
-  );
-  const body = await c.req
-    .json<{
-      delete_files_on_disk?: boolean;
-      delete_files?: boolean;
-    }>()
-    .catch(() => null);
-  const deleteFilesBody = Boolean(
-    body?.delete_files_on_disk ?? body?.delete_files
-  );
-  const deleteFilesOnDisk = deleteFilesQuery || deleteFilesBody;
+    const deleteFilesQuery = parseBool(
+      c.req.query("delete_files_on_disk") ?? c.req.query("delete_files")
+    );
+    const body = await c.req
+      .json<{
+        delete_files_on_disk?: boolean;
+        delete_files?: boolean;
+      }>()
+      .catch(() => null);
+    const deleteFilesBody = Boolean(
+      body?.delete_files_on_disk ?? body?.delete_files
+    );
+    const deleteFilesOnDisk = deleteFilesQuery || deleteFilesBody;
 
-  const result = await deleteSubscriptionWithCleanup(sub, {
-    deleteFilesOnDisk,
-  });
-  if (!result.ok) {
-    return c.json({ error: result.error }, result.status);
+    const result = await deleteSubscriptionWithCleanup(sub, {
+      deleteFilesOnDisk,
+    });
+    if (!result.ok) {
+      return c.json({ error: result.error }, result.status);
+    }
+    return c.json(result.data);
+  } catch (error) {
+    logger.error(
+      {
+        op: "subscriptions.delete_failed",
+        method: c.req.method,
+        path: c.req.path,
+        subscriptionId: id,
+        err: error,
+      },
+      "Subscription delete route failed"
+    );
+    throw error;
   }
-  return c.json(result.data);
 });
 
 // Get episodes for subscription

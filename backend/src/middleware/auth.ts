@@ -1,5 +1,6 @@
 import { Context, Next } from "hono";
 import { getSetting } from "../db/settings";
+import { logger } from "../services/logger";
 
 function isPrivateIp(ip: string): boolean {
   if (ip === "::1" || ip === "localhost") return true;
@@ -53,6 +54,24 @@ function getClientIp(c: Context): string | undefined {
   return undefined;
 }
 
+function logAuthFailure(
+  c: Context,
+  reason: string,
+  extra: Record<string, unknown> = {}
+) {
+  logger.warn(
+    {
+      op: "auth.failed",
+      reason,
+      method: c.req.method,
+      path: c.req.path,
+      ip: getClientIp(c) ?? null,
+      ...extra,
+    },
+    "Authentication failed"
+  );
+}
+
 export async function authMiddleware(c: Context, next: Next) {
   // Allow OPTIONS requests for CORS
   if (c.req.method === "OPTIONS") {
@@ -75,11 +94,13 @@ export async function authMiddleware(c: Context, next: Next) {
       await next();
       return;
     }
+    logAuthFailure(c, "invalid_sonarr_api_key", { hasSonarrApiKey: true });
     return c.json({ error: "Invalid token" }, 401);
   }
 
   const authHeader = c.req.header("Authorization");
   if (!authHeader) {
+    logAuthFailure(c, "missing_authorization_header", { isSonarrV3Route });
     return c.json({ error: "Missing Authorization header" }, 401);
   }
 
@@ -88,6 +109,10 @@ export async function authMiddleware(c: Context, next: Next) {
     : authHeader;
 
   if (!apiToken || token !== apiToken) {
+    logAuthFailure(c, "invalid_authorization_token", {
+      isSonarrV3Route,
+      tokenLength: token.length,
+    });
     return c.json({ error: "Invalid token" }, 401);
   }
 

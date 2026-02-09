@@ -38,40 +38,110 @@ const parser = new XMLParser({
 
 export async function fetchMikanRSS(keyword: string): Promise<RSSItem[]> {
   const url = `https://mikanani.me/RSS/Search?searchstr=${encodeURIComponent(keyword)}`;
+  const start = Date.now();
   try {
-    logger.debug({ keyword, url }, "Mikan RSS search query");
+    logger.debug(
+      { op: "integration.rss.request", provider: "mikan", keyword, url, method: "GET" },
+      "Mikan RSS search query"
+    );
     const response = await fetch(url);
     if (!response.ok) {
-      logger.warn({ status: response.status }, "Mikan RSS fetch failed");
+      logger.warn(
+        {
+          op: "integration.rss.request_failed",
+          provider: "mikan",
+          keyword,
+          url,
+          status: response.status,
+          durationMs: Date.now() - start,
+        },
+        "Mikan RSS fetch failed"
+      );
       reportIntegrationFailure("mikan", `HTTP ${response.status}`, "Mikan RSS call failed");
       return [];
     }
     const xml = await response.text();
+    logger.debug(
+      {
+        op: "integration.rss.response",
+        provider: "mikan",
+        keyword,
+        url,
+        status: response.status,
+        durationMs: Date.now() - start,
+      },
+      "Mikan RSS fetch succeeded"
+    );
     reportIntegrationSuccess("mikan", "Last Mikan RSS call succeeded");
     return parseRSS(xml, "mikan");
   } catch (error) {
     reportIntegrationFailure("mikan", error, "Mikan RSS call failed");
-    logger.error({ err: error }, "Mikan RSS fetch error");
+    logger.error(
+      {
+        op: "integration.rss.request_error",
+        provider: "mikan",
+        keyword,
+        url,
+        durationMs: Date.now() - start,
+        err: error,
+      },
+      "Mikan RSS fetch error"
+    );
     return [];
   }
 }
 
 export async function fetchDmhyRSS(keyword: string): Promise<RSSItem[]> {
   const url = `https://share.dmhy.org/topics/rss/rss.xml?keyword=${encodeURIComponent(keyword)}`;
+  const start = Date.now();
   try {
-    logger.debug({ keyword, url }, "DMHY RSS search query");
+    logger.debug(
+      { op: "integration.rss.request", provider: "dmhy", keyword, url, method: "GET" },
+      "DMHY RSS search query"
+    );
     const response = await fetch(url);
     if (!response.ok) {
-      logger.warn({ status: response.status }, "DMHY RSS fetch failed");
+      logger.warn(
+        {
+          op: "integration.rss.request_failed",
+          provider: "dmhy",
+          keyword,
+          url,
+          status: response.status,
+          durationMs: Date.now() - start,
+        },
+        "DMHY RSS fetch failed"
+      );
       reportIntegrationFailure("dmhy", `HTTP ${response.status}`, "DMHY RSS call failed");
       return [];
     }
     const xml = await response.text();
+    logger.debug(
+      {
+        op: "integration.rss.response",
+        provider: "dmhy",
+        keyword,
+        url,
+        status: response.status,
+        durationMs: Date.now() - start,
+      },
+      "DMHY RSS fetch succeeded"
+    );
     reportIntegrationSuccess("dmhy", "Last DMHY RSS call succeeded");
     return parseRSS(xml, "dmhy");
   } catch (error) {
     reportIntegrationFailure("dmhy", error, "DMHY RSS call failed");
-    logger.error({ err: error }, "DMHY RSS fetch error");
+    logger.error(
+      {
+        op: "integration.rss.request_error",
+        provider: "dmhy",
+        keyword,
+        url,
+        durationMs: Date.now() - start,
+        err: error,
+      },
+      "DMHY RSS fetch error"
+    );
     return [];
   }
 }
@@ -187,7 +257,10 @@ function parseRSS(xml: string, source: string): RSSItem[] {
       } as RSSItem;
     });
   } catch (error) {
-    logger.error({ err: error, source }, "RSS parse error");
+    logger.error(
+      { op: "integration.rss.parse_error", source, err: error },
+      "RSS parse error"
+    );
     return [];
   }
 }
@@ -258,7 +331,10 @@ function applyEjectTitleRules(items: RSSItem[]): RSSItem[] {
       try {
         return { rule, regex: new RegExp(rule) };
       } catch (error) {
-        logger.warn({ rule, err: error }, "Invalid eject title rule");
+        logger.warn(
+          { op: "integration.rss.invalid_eject_rule", rule, err: error },
+          "Invalid eject title rule"
+        );
         return null;
       }
     })

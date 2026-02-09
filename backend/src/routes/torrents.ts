@@ -2,6 +2,7 @@ import { Context, Hono } from "hono";
 import { searchTorrents } from "../services/rss";
 import { qbittorrent } from "../services/qbittorrent";
 import { downloadTorrent } from "../actions/torrents";
+import { logger } from "../services/logger";
 
 const torrentRoutes = new Hono();
 
@@ -44,6 +45,18 @@ torrentRoutes.get("/search", async (c) => {
     const results = await searchTorrents(keyword, { season, episode });
     return c.json(results);
   } catch (error: any) {
+    logger.error(
+      {
+        op: "torrents.search_failed",
+        method: c.req.method,
+        path: c.req.path,
+        keyword,
+        season: season || null,
+        episode: episode || null,
+        err: error,
+      },
+      "Torrent search route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });
@@ -103,6 +116,16 @@ torrentRoutes.post("/pause", async (c) => {
     const success = await qbittorrent.pauseTorrents(bodyOrResponse.hashes);
     return c.json({ success });
   } catch (error: any) {
+    logger.error(
+      {
+        op: "torrents.pause_failed",
+        method: c.req.method,
+        path: c.req.path,
+        hashCount: bodyOrResponse.hashes.length,
+        err: error,
+      },
+      "Pause torrents route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });
@@ -120,6 +143,16 @@ torrentRoutes.post("/resume", async (c) => {
     const success = await qbittorrent.resumeTorrents(bodyOrResponse.hashes);
     return c.json({ success });
   } catch (error: any) {
+    logger.error(
+      {
+        op: "torrents.resume_failed",
+        method: c.req.method,
+        path: c.req.path,
+        hashCount: bodyOrResponse.hashes.length,
+        err: error,
+      },
+      "Resume torrents route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });
@@ -146,6 +179,17 @@ torrentRoutes.post("/delete", async (c) => {
     );
     return c.json({ success });
   } catch (error: any) {
+    logger.error(
+      {
+        op: "torrents.delete_failed",
+        method: c.req.method,
+        path: c.req.path,
+        hashCount: bodyOrResponse.hashes.length,
+        deleteFiles: bodyOrResponse.deleteFiles || false,
+        err: error,
+      },
+      "Delete torrents route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });

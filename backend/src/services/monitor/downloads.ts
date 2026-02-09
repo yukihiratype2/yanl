@@ -83,6 +83,7 @@ function getPendingEpisodes(
         invalidAirDateWarnings.add(key);
         logger.warn(
           {
+            op: "monitor.downloads.invalid_episode_air_date",
             subscriptionId: sub.id,
             subscription: sub.title,
             episodeId: e.id,
@@ -190,7 +191,19 @@ async function tryDownloadEpisode(
       await startEpisodeDownload(sub, ep, item);
       return true;
     } catch (err) {
-      logger.error({ title: item.title, err }, "Failed to add torrent");
+      logger.error(
+        {
+          op: "monitor.downloads.add_episode_torrent_failed",
+          subscriptionId: sub.id,
+          subscription: sub.title,
+          episodeId: ep.id,
+          episode: ep.episode_number,
+          title: item.title,
+          torrentHash: parseMagnetHash(item.link),
+          err,
+        },
+        "Failed to add torrent"
+      );
     }
   }
 
@@ -265,7 +278,17 @@ async function searchMovieForSubscription(sub: Subscription) {
       await startMovieDownload(sub, item);
       break;
     } catch (err) {
-      logger.error({ subscription: sub.title, err }, "Movie torrent add error");
+      logger.error(
+        {
+          op: "monitor.downloads.add_movie_torrent_failed",
+          subscriptionId: sub.id,
+          subscription: sub.title,
+          title: item.title,
+          torrentHash: parseMagnetHash(item.link),
+          err,
+        },
+        "Movie torrent add error"
+      );
     }
   }
 }

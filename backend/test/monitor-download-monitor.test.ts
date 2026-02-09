@@ -1,9 +1,11 @@
-import { describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 mock.restore();
 import { modulePath } from "./mockPath";
 
 const updates: any[] = [];
+const loggerCalls: Array<{ level: string; args: any[] }> = [];
+let moveShouldFail = false;
 
 const modelsMock = () => ({
   getActiveSubscriptions: () => [
@@ -71,7 +73,10 @@ mock.module("../qbittorrent", qbitMock);
 
 const fileManagerMock = () => ({
   createMediaFolder: () => "/media/Show/Season 01",
-  moveFileToMediaDir: () => "/media/Show/Season 01/Show - S01E01.mkv",
+  moveFileToMediaDir: () => {
+    if (moveShouldFail) throw new Error("move failed");
+    return "/media/Show/Season 01/Show - S01E01.mkv";
+  },
   findVideoFiles: () => ["/downloads/file.mkv"],
 });
 mock.module(modulePath("../src/services/fileManager"), fileManagerMock);
@@ -79,8 +84,8 @@ mock.module("../fileManager", fileManagerMock);
 
 const loggerMock = () => ({
   logger: {
-    info: () => {},
-    error: () => {},
+    info: (...args: any[]) => loggerCalls.push({ level: "info", args }),
+    error: (...args: any[]) => loggerCalls.push({ level: "error", args }),
   },
   reconfigureLogger: () => ({ info: () => {} }),
 });
@@ -97,8 +102,14 @@ mock.module("../notifaction", notifactionMock);
 const monitor = await import("../src/services/monitor/download-monitor?test=monitor-download-monitor");
 
 describe("monitor/download-monitor", () => {
-  it("moves completed episode files", async () => {
+  beforeEach(() => {
+    updates.length = 0;
     notifactionCalls.length = 0;
+    loggerCalls.length = 0;
+    moveShouldFail = false;
+  });
+
+  it("moves completed episode files", async () => {
     await monitor.monitorDownloads();
     expect(updates.length).toBe(1);
     expect(updates[0].data.status).toBe("completed");
@@ -106,5 +117,22 @@ describe("monitor/download-monitor", () => {
       "download_completed",
       "media_moved",
     ]);
+  });
+
+  it("logs enriched context when episode move fails", async () => {
+    moveShouldFail = true;
+    await monitor.monitorDownloads();
+
+    const failure = loggerCalls.find(
+      (entry) =>
+        entry.level === "error" &&
+        entry.args[0]?.op === "monitor.download_monitor.episode_file_move_failed"
+    );
+    expect(failure).toBeTruthy();
+    expect(failure?.args[0]?.subscriptionId).toBe(1);
+    expect(failure?.args[0]?.episodeId).toBe(1);
+    expect(failure?.args[0]?.torrentHash).toBe("abc");
+    expect(failure?.args[0]?.contentPath).toBe("/downloads/file.mkv");
+    expect(String(failure?.args[0]?.err?.message || "")).toContain("move failed");
   });
 });

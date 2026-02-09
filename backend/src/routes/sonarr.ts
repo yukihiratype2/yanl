@@ -5,6 +5,7 @@ import * as models from "../db/models?sonarr";
 import { getSetting } from "../db/settings";
 import { runJobNow } from "../services/monitor";
 import * as tmdb from "../services/tmdb?sonarr";
+import { logger } from "../services/logger";
 
 const sonarrRoutes = new Hono();
 
@@ -27,6 +28,41 @@ type ParsedSeason = {
 };
 
 type SonarrSeriesPayload = Record<string, unknown>;
+
+function logSonarrValidationFailure(
+  c: Context,
+  reason: string,
+  details: Record<string, unknown> = {}
+) {
+  logger.warn(
+    {
+      op: "sonarr.request.rejected",
+      reason,
+      method: c.req.method,
+      path: c.req.path,
+      ...details,
+    },
+    "Sonarr request rejected"
+  );
+}
+
+function logSonarrRouteError(
+  c: Context,
+  op: string,
+  err: unknown,
+  details: Record<string, unknown> = {}
+) {
+  logger.error(
+    {
+      op,
+      method: c.req.method,
+      path: c.req.path,
+      ...details,
+      err,
+    },
+    "Sonarr route failure"
+  );
+}
 
 function parsePositiveInt(value: unknown): number | null {
   if (typeof value === "number" && Number.isInteger(value) && value > 0) {
@@ -659,6 +695,9 @@ sonarrRoutes.get("/series/lookup", async (c) => {
       }
       return c.json([dto]);
     } catch (error: any) {
+      logSonarrRouteError(c, "sonarr.series.lookup_by_tvdb_failed", error, {
+        tvdbId,
+      });
       return c.json({ error: error.message || "Failed to resolve TVDB ID" }, 422);
     }
   }
@@ -676,6 +715,9 @@ sonarrRoutes.get("/series/lookup", async (c) => {
 
     return c.json(output);
   } catch (error: any) {
+    logSonarrRouteError(c, "sonarr.series.lookup_failed", error, {
+      term,
+    });
     return c.json({ error: error.message || "Failed to lookup series" }, 500);
   }
 });
@@ -728,6 +770,12 @@ sonarrRoutes.post("/series", async (c) => {
     }
     return c.json(dto, 201);
   } catch (error: any) {
+    const summaryPayload = payload as SonarrSeriesPayload;
+    logSonarrRouteError(c, "sonarr.series.create_failed", error, {
+      tvdbId: parsePositiveInt(summaryPayload.tvdbId ?? summaryPayload.tvdbid),
+      qualityProfileId: parseProfileId(summaryPayload),
+      seasonCount: parseSeasons(summaryPayload).length,
+    });
     const message = error?.message || "Failed to add series";
     if (
       message.includes("Missing tvdbId") ||
@@ -766,6 +814,12 @@ sonarrRoutes.put("/series", async (c) => {
     }
     return c.json(dto);
   } catch (error: any) {
+    const summaryPayload = payload as SonarrSeriesPayload;
+    logSonarrRouteError(c, "sonarr.series.update_failed", error, {
+      tvdbId: parsePositiveInt(summaryPayload.tvdbId ?? summaryPayload.tvdbid),
+      qualityProfileId: parseProfileId(summaryPayload),
+      seasonCount: parseSeasons(summaryPayload).length,
+    });
     const message = error?.message || "Failed to update series";
     if (message.includes("Missing tvdbId") || message.includes("Missing qualityProfileId")) {
       return c.json({ error: message }, 400);
@@ -905,6 +959,7 @@ sonarrRoutes.post("/command", async (c) => {
       runJobNow("monitorDownloads");
       break;
     default:
+      logSonarrValidationFailure(c, "unsupported_command", { name });
       return c.json({ error: `Unsupported command: ${name}` }, 400);
   }
 

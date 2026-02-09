@@ -4,11 +4,13 @@ mock.restore();
 import { makeTextResponse, mockFetch } from "./helpers";
 import { modulePath } from "./mockPath";
 
+const loggerCalls: Array<{ level: string; args: any[] }> = [];
 const loggerMock = () => ({
   logger: {
-    info: () => {},
-    warn: () => {},
-    error: () => {},
+    info: (...args: any[]) => loggerCalls.push({ level: "info", args }),
+    warn: (...args: any[]) => loggerCalls.push({ level: "warn", args }),
+    error: (...args: any[]) => loggerCalls.push({ level: "error", args }),
+    debug: (...args: any[]) => loggerCalls.push({ level: "debug", args }),
   },
   reconfigureLogger: () => ({ info: () => {} }),
 });
@@ -35,6 +37,7 @@ async function loadQb() {
 
 describe("services/qbittorrent", () => {
   beforeEach(() => {
+    loggerCalls.length = 0;
     settings.qbit_url = "http://qbit";
     settings.qbit_username = "user";
     settings.qbit_password = "pass";
@@ -193,6 +196,15 @@ describe("services/qbittorrent", () => {
       return makeTextResponse("", { status: 200 });
     });
     await expect(qb.pauseTorrents(["x"])).rejects.toThrow("network down");
+
+    const errorLog = loggerCalls.find(
+      (entry) =>
+        entry.level === "error" &&
+        entry.args[0]?.op === "integration.qbit.request_error"
+    );
+    expect(errorLog).toBeTruthy();
+    expect(errorLog?.args[0]?.provider).toBe("qbit");
+    expect(errorLog?.args[0]?.err).toBeTruthy();
   });
 
   it("encodes hash when requesting torrent files", async () => {

@@ -4,6 +4,9 @@ mock.restore();
 import { modulePath } from "./mockPath";
 
 const scheduled: Array<{ expr: string; fn: () => void }> = [];
+const loggerCalls: Array<{ level: string; args: any[] }> = [];
+const logContextStack: Array<Record<string, unknown>> = [];
+let requestIdSeq = 0;
 
 mock.module("node-cron", () => ({
   default: {
@@ -18,12 +21,48 @@ mock.module("node-cron", () => ({
   },
 }));
 
-const loggerCalls: Array<{ level: string; args: any[] }> = [];
 const loggerMock = () => ({
   logger: {
-    info: (...args: any[]) => loggerCalls.push({ level: "info", args }),
-    warn: (...args: any[]) => loggerCalls.push({ level: "warn", args }),
-    error: (...args: any[]) => loggerCalls.push({ level: "error", args }),
+    info: (...args: any[]) => {
+      const context = logContextStack[logContextStack.length - 1] || {};
+      const first = args[0];
+      if (first && typeof first === "object" && !Array.isArray(first)) {
+        loggerCalls.push({ level: "info", args: [{ ...context, ...first }, ...args.slice(1)] });
+      } else {
+        loggerCalls.push({ level: "info", args: [{ ...context }, ...args] });
+      }
+    },
+    warn: (...args: any[]) => {
+      const context = logContextStack[logContextStack.length - 1] || {};
+      const first = args[0];
+      if (first && typeof first === "object" && !Array.isArray(first)) {
+        loggerCalls.push({ level: "warn", args: [{ ...context, ...first }, ...args.slice(1)] });
+      } else {
+        loggerCalls.push({ level: "warn", args: [{ ...context }, ...args] });
+      }
+    },
+    error: (...args: any[]) => {
+      const context = logContextStack[logContextStack.length - 1] || {};
+      const first = args[0];
+      if (first && typeof first === "object" && !Array.isArray(first)) {
+        loggerCalls.push({ level: "error", args: [{ ...context, ...first }, ...args.slice(1)] });
+      } else {
+        loggerCalls.push({ level: "error", args: [{ ...context }, ...args] });
+      }
+    },
+  },
+  createRequestId: () => `job-run-${++requestIdSeq}`,
+  withLogContext: (context: Record<string, unknown>, fn: () => unknown) => {
+    const current = logContextStack[logContextStack.length - 1] || {};
+    logContextStack.push({ ...current, ...context });
+    const result = fn();
+    if (result && typeof (result as Promise<unknown>).then === "function") {
+      return (result as Promise<unknown>).finally(() => {
+        logContextStack.pop();
+      });
+    }
+    logContextStack.pop();
+    return result;
   },
   reconfigureLogger: () => ({ info: () => {} }),
 });
@@ -68,6 +107,8 @@ describe("monitor/jobs", () => {
   beforeEach(() => {
     scheduled.length = 0;
     loggerCalls.length = 0;
+    logContextStack.length = 0;
+    requestIdSeq = 0;
     checkNewEpisodesImpl = async () => {};
     searchAndDownloadImpl = async () => {};
     monitorDownloadsImpl = async () => {};
@@ -108,7 +149,13 @@ describe("monitor/jobs", () => {
     await Promise.resolve();
 
     expect(runs).toBe(1);
-    const warned = loggerCalls.some((c) => c.level === "warn");
+    const warned = loggerCalls.some(
+      (c) =>
+        c.level === "warn" &&
+        c.args[0]?.op === "monitor.job.skipped" &&
+        c.args[0]?.trigger === "manual" &&
+        typeof c.args[0]?.activeJobRunId === "string"
+    );
     expect(warned).toBe(true);
 
     gate.resolve();
@@ -132,5 +179,16 @@ describe("monitor/jobs", () => {
     expect(target).toBeTruthy();
     expect(target?.running).toBe(false);
     expect(target?.lastRunError).toContain("boom");
+
+    const failureLog = loggerCalls.find(
+      (entry) =>
+        entry.level === "error" &&
+        entry.args[0]?.op === "monitor.job.failed" &&
+        entry.args[0]?.job === "searchAndDownload"
+    );
+    expect(failureLog).toBeTruthy();
+    expect(failureLog?.args[0]?.trigger).toBe("manual");
+    expect(typeof failureLog?.args[0]?.jobRunId).toBe("string");
+    expect(typeof failureLog?.args[0]?.durationMs).toBe("number");
   });
 });

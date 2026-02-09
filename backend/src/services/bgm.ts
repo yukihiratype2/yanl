@@ -2,6 +2,7 @@ import {
   reportIntegrationFailure,
   reportIntegrationSuccess,
 } from "./integration-health";
+import { logger } from "./logger";
 const BGM_BASE_URL = "https://api.bgm.tv/v0";
 
 export interface BGMSubject {
@@ -51,7 +52,18 @@ export interface BGMSearchEpisodesResponse {
 }
 
 async function bgmFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const start = Date.now();
   try {
+    const method = (options?.method || "GET").toString().toUpperCase();
+    logger.debug(
+      {
+        op: "integration.bgm.request",
+        provider: "bgm",
+        path,
+        method,
+      },
+      "Bangumi API request"
+    );
     const response = await fetch(`${BGM_BASE_URL}${path}`, {
       headers: {
         "Content-Type": "application/json",
@@ -61,12 +73,45 @@ async function bgmFetch<T>(path: string, options?: RequestInit): Promise<T> {
     });
 
     if (!response.ok) {
+      logger.warn(
+        {
+          op: "integration.bgm.response_error",
+          provider: "bgm",
+          path,
+          method,
+          status: response.status,
+          durationMs: Date.now() - start,
+        },
+        "Bangumi API response was not OK"
+      );
       throw new Error(`BGM API error: ${response.status} ${response.statusText}`);
     }
 
+    logger.debug(
+      {
+        op: "integration.bgm.response",
+        provider: "bgm",
+        path,
+        method,
+        status: response.status,
+        durationMs: Date.now() - start,
+      },
+      "Bangumi API response received"
+    );
     reportIntegrationSuccess("bgm", "Last Bangumi API call succeeded");
     return response.json() as Promise<T>;
   } catch (error) {
+    logger.error(
+      {
+        op: "integration.bgm.request_error",
+        provider: "bgm",
+        path,
+        method: (options?.method || "GET").toString().toUpperCase(),
+        durationMs: Date.now() - start,
+        err: error,
+      },
+      "Bangumi API request failed"
+    );
     reportIntegrationFailure("bgm", error, "Bangumi API call failed");
     throw error;
   }

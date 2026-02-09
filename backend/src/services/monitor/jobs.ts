@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { logger } from "../logger";
+import { createRequestId, logger, withLogContext } from "../logger";
 import { checkNewEpisodes } from "./discovery";
 import { searchAndDownload } from "./downloads";
 import { monitorDownloads } from "./download-monitor";
@@ -20,6 +20,7 @@ interface JobEntry {
   description: string;
   schedule: string;
   running: boolean;
+  activeJobRunId: string | null;
   lastRunAt: Date | null;
   lastRunDurationMs: number | null;
   lastRunError: string | null;
@@ -28,6 +29,7 @@ interface JobEntry {
 }
 
 type JobName = "checkNewEpisodes" | "searchAndDownload" | "monitorDownloads";
+type JobTrigger = "schedule" | "manual" | "startup";
 
 const JOB_SCHEDULES: Record<JobName, string> = {
   checkNewEpisodes: "0 0 * * *", // Every day at midnight
@@ -48,6 +50,7 @@ function registerJob(
     description,
     schedule,
     running: false,
+    activeJobRunId: null,
     lastRunAt: null,
     lastRunDurationMs: null,
     lastRunError: null,
@@ -56,33 +59,75 @@ function registerJob(
   };
 
   entry.task = cron.schedule(schedule, () => {
-    runJobInternal(entry);
+    void runJobInternal(entry, "schedule");
   });
 
   jobs.set(name, entry);
 }
 
-async function runJobInternal(entry: JobEntry) {
+async function runJobInternal(entry: JobEntry, trigger: JobTrigger) {
   if (entry.running) {
-    logger.warn({ job: entry.name }, "Job already running, skipping.");
+    logger.warn(
+      {
+        op: "monitor.job.skipped",
+        job: entry.name,
+        trigger,
+        activeJobRunId: entry.activeJobRunId,
+      },
+      "Job already running, skipping"
+    );
     return;
   }
 
+  const jobRunId = createRequestId();
   entry.running = true;
+  entry.activeJobRunId = jobRunId;
   entry.lastRunError = null;
   const start = Date.now();
-  logger.info({ job: entry.name }, "Running job");
 
-  try {
-    await entry.fn();
-  } catch (err: any) {
-    entry.lastRunError = err?.message || String(err);
-    logger.error({ job: entry.name, err }, "Job failed");
-  } finally {
-    entry.lastRunAt = new Date();
-    entry.lastRunDurationMs = Date.now() - start;
-    entry.running = false;
-  }
+  await withLogContext({ job: entry.name, jobRunId, trigger }, async () => {
+    logger.info(
+      {
+        op: "monitor.job.start",
+        schedule: entry.schedule,
+      },
+      "Running job"
+    );
+
+    let failedErr: unknown = null;
+    try {
+      await entry.fn();
+    } catch (err) {
+      failedErr = err;
+      entry.lastRunError = (err as any)?.message || String(err);
+    } finally {
+      const durationMs = Date.now() - start;
+      entry.lastRunAt = new Date();
+      entry.lastRunDurationMs = durationMs;
+      entry.running = false;
+      entry.activeJobRunId = null;
+
+      if (failedErr) {
+        logger.error(
+          {
+            op: "monitor.job.failed",
+            durationMs,
+            err: failedErr,
+          },
+          "Job failed"
+        );
+        return;
+      }
+
+      logger.info(
+        {
+          op: "monitor.job.success",
+          durationMs,
+        },
+        "Job completed"
+      );
+    }
+  });
 }
 
 export function getJobStatuses(): JobStatus[] {
@@ -102,7 +147,7 @@ export async function runJobNow(name: string): Promise<boolean> {
   const entry = jobs.get(name);
   if (!entry) return false;
   // Run in background, don't await
-  runJobInternal(entry);
+  void runJobInternal(entry, "manual");
   return true;
 }
 
@@ -130,5 +175,5 @@ export function startMonitor() {
 
   // Initial run on startup
   const entry = jobs.get("checkNewEpisodes");
-  if (entry) runJobInternal(entry);
+  if (entry) void runJobInternal(entry, "startup");
 }

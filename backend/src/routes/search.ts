@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import * as tmdb from "../services/tmdb";
 import * as bgm from "../services/bgm";
+import { logger } from "../services/logger";
 
 const searchRoutes = new Hono();
 
@@ -72,6 +73,19 @@ searchRoutes.get("/", async (c) => {
       })),
     });
   } catch (error: any) {
+    logger.error(
+      {
+        op: "search.query_failed",
+        method: c.req.method,
+        path: c.req.path,
+        query,
+        page,
+        type: type || null,
+        source,
+        err: error,
+      },
+      "Search route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });
@@ -86,6 +100,16 @@ searchRoutes.get("/tv/:id", async (c) => {
     const detail = await tmdb.getTVDetail(id);
     return c.json(detail);
   } catch (error: any) {
+    logger.error(
+      {
+        op: "search.tv_detail_failed",
+        method: c.req.method,
+        path: c.req.path,
+        tvId: id,
+        err: error,
+      },
+      "TV detail route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });
@@ -100,6 +124,16 @@ searchRoutes.get("/movie/:id", async (c) => {
     const detail = await tmdb.getMovieDetail(id);
     return c.json(detail);
   } catch (error: any) {
+    logger.error(
+      {
+        op: "search.movie_detail_failed",
+        method: c.req.method,
+        path: c.req.path,
+        movieId: id,
+        err: error,
+      },
+      "Movie detail route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });
@@ -118,6 +152,17 @@ searchRoutes.get("/tv/:id/season/:season", async (c) => {
     const detail = await tmdb.getSeasonDetail(tvId, seasonNumber);
     return c.json(detail);
   } catch (error: any) {
+    logger.error(
+      {
+        op: "search.tv_season_detail_failed",
+        method: c.req.method,
+        path: c.req.path,
+        tvId,
+        seasonNumber,
+        err: error,
+      },
+      "TV season detail route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });

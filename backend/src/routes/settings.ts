@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getAllSettings, setSettings, getSetting } from "../db/settings";
 import { testAIConfig } from "../services/ai";
-import { reconfigureLogger } from "../services/logger";
+import { logger, reconfigureLogger } from "../services/logger";
 
 const settingsRoutes = new Hono();
 
@@ -52,6 +52,15 @@ settingsRoutes.post("/ai/test", async (c) => {
     const result = await testAIConfig();
     return c.json({ response: result });
   } catch (error: any) {
+    logger.error(
+      {
+        op: "settings.ai_test_failed",
+        method: c.req.method,
+        path: c.req.path,
+        err: error,
+      },
+      "AI test route failed"
+    );
     return c.json({ error: error.message }, 500);
   }
 });
