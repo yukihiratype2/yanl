@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   CalendarDays,
   ChevronLeft,
@@ -25,11 +26,7 @@ export default function CalendarPage() {
   const startPad = firstDay.getDay();
   const totalDays = lastDay.getDate();
 
-  useEffect(() => {
-    loadEpisodes();
-  }, [year, month]);
-
-  async function loadEpisodes() {
+  const loadEpisodes = useCallback(async () => {
     const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const end = `${year}-${String(month + 1).padStart(2, "0")}-${String(
       totalDays
@@ -43,7 +40,11 @@ export default function CalendarPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [month, totalDays, year]);
+
+  useEffect(() => {
+    loadEpisodes();
+  }, [loadEpisodes]);
 
   const episodesByDate = useMemo(() => {
     const map: Record<string, CalendarEpisode[]> = {};
@@ -180,9 +181,11 @@ export default function CalendarPage() {
                         ep.episode_number
                       ).padStart(2, "0")} - ${ep.title || ""}`}
                     >
-                      <img
+                      <Image
                         src={tmdbImage(ep.poster_path, "w92")}
-                        alt=""
+                        alt={ep.title || ep.subscription_title}
+                        width={16}
+                        height={24}
                         className="w-4 h-6 object-cover rounded-sm shrink-0"
                       />
                       <span className="truncate">

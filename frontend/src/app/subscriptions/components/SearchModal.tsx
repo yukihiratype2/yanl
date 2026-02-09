@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Search, X } from "lucide-react";
+import Image from "next/image";
 import {
   getProfiles,
   getTVDetail,
@@ -206,9 +207,11 @@ export default function SearchModal({ onClose }: SearchModalProps) {
           key={result.id}
           className="flex items-center gap-4 p-3 bg-background rounded-lg hover:bg-secondary/50 transition-colors"
         >
-          <img
+          <Image
             src={tmdbImage(result.poster_path, "w92")}
             alt={result.name || result.title || ""}
+            width={48}
+            height={72}
             className="w-12 h-18 object-cover rounded-lg shrink-0"
           />
           <div className="flex-1 min-w-0">
@@ -333,9 +336,11 @@ export default function SearchModal({ onClose }: SearchModalProps) {
             </div>
             <div className="p-4 space-y-4">
               <div className="flex gap-3">
-                <img
+                <Image
                   src={tmdbImage(subscribeTarget.poster_path, "w154")}
                   alt={subscribeTarget.name || subscribeTarget.title || ""}
+                  width={80}
+                  height={112}
                   className="w-20 h-28 object-cover rounded-lg"
                 />
                 <div>

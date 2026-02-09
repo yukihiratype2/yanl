@@ -9,7 +9,6 @@ import {
   Film,
   Loader2,
   PlugZap,
-  Rss,
   Tv,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -73,9 +72,6 @@ function integrationIcon(key: IntegrationKey) {
       return <Film className="h-4 w-4" />;
     case "bgm":
       return <Tv className="h-4 w-4" />;
-    case "mikan":
-    case "dmhy":
-      return <Rss className="h-4 w-4" />;
     case "notifaction":
       return <Bell className="h-4 w-4" />;
     default:

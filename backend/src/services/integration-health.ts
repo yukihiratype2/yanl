@@ -5,7 +5,6 @@ import * as bgmService from "./bgm";
 import { logger } from "./logger";
 import * as notifactionService from "./notifaction";
 import * as qbittorrentService from "./qbittorrent";
-import * as rssService from "./rss";
 import * as tmdbService from "./tmdb";
 
 export type IntegrationKey =
@@ -13,8 +12,6 @@ export type IntegrationKey =
   | "ai"
   | "tmdb"
   | "bgm"
-  | "mikan"
-  | "dmhy"
   | "notifaction";
 
 export type IntegrationHealthStatus =
@@ -73,8 +70,6 @@ const INTEGRATION_ORDER: IntegrationKey[] = [
   "ai",
   "tmdb",
   "bgm",
-  "mikan",
-  "dmhy",
   "notifaction",
 ];
 
@@ -83,8 +78,6 @@ const INTEGRATION_SCHEDULES: Record<IntegrationKey, string> = {
   ai: "0 */2 * * *",
   tmdb: "0 3 * * *",
   bgm: "5 3 * * *",
-  mikan: "10 3 * * *",
-  dmhy: "15 3 * * *",
   notifaction: "20 * * * *",
 };
 
@@ -233,38 +226,6 @@ async function checkBGM(): Promise<CheckResult> {
   return createCheckResult(true, "ok", "Connected");
 }
 
-async function checkMikan(): Promise<CheckResult> {
-  const probe = rssService.testMikanRSSConnection;
-  if (typeof probe !== "function") {
-    return createCheckResult(true, "error", "Mikan health probe unavailable");
-  }
-  const result = await probe();
-  if (!result.ok) {
-    return createCheckResult(
-      true,
-      "error",
-      result.error || "Mikan health check failed"
-    );
-  }
-  return createCheckResult(true, "ok", "Feed reachable");
-}
-
-async function checkDmhy(): Promise<CheckResult> {
-  const probe = rssService.testDmhyRSSConnection;
-  if (typeof probe !== "function") {
-    return createCheckResult(true, "error", "DMHY health probe unavailable");
-  }
-  const result = await probe();
-  if (!result.ok) {
-    return createCheckResult(
-      true,
-      "error",
-      result.error || "DMHY health check failed"
-    );
-  }
-  return createCheckResult(true, "ok", "Feed reachable");
-}
-
 async function checkNotifaction(trigger: CheckTrigger): Promise<CheckResult> {
   const readinessProbe = notifactionService.getNotifactionReadiness;
   if (typeof readinessProbe !== "function") {
@@ -337,24 +298,6 @@ function ensureInitialized() {
       "Bangumi",
       "bgm.tv API availability health.",
       checkBGM
-    )
-  );
-  entries.set(
-    "mikan",
-    createEntry(
-      "mikan",
-      "Mikan RSS",
-      "Mikan RSS endpoint availability health.",
-      checkMikan
-    )
-  );
-  entries.set(
-    "dmhy",
-    createEntry(
-      "dmhy",
-      "DMHY RSS",
-      "DMHY RSS endpoint availability health.",
-      checkDmhy
     )
   );
   entries.set(
