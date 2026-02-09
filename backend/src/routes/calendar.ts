@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getEpisodesWithAirDateRange } from "../db/models";
+import { compareDateOnly, isCanonicalDateOnly } from "../lib/date";
 
 const calendarRoutes = new Hono();
 
@@ -13,6 +14,18 @@ calendarRoutes.get("/", (c) => {
       { error: "Missing 'start' and 'end' query parameters (YYYY-MM-DD)" },
       400
     );
+  }
+
+  if (!isCanonicalDateOnly(start) || !isCanonicalDateOnly(end)) {
+    return c.json(
+      { error: "Invalid 'start' or 'end' query parameter (expected YYYY-MM-DD)" },
+      400
+    );
+  }
+
+  const rangeOrder = compareDateOnly(start, end);
+  if (rangeOrder == null || rangeOrder > 0) {
+    return c.json({ error: "'start' must be less than or equal to 'end'" }, 400);
   }
 
   const episodes = getEpisodesWithAirDateRange(start, end);

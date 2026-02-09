@@ -1,4 +1,5 @@
 import db from "./index";
+import { isCanonicalDateOnly } from "../lib/date";
 
 export interface Subscription {
   id: number;
@@ -69,6 +70,16 @@ export interface Profile {
   updated_at: string;
 }
 
+function assertCanonicalDateValue(
+  field: "first_air_date" | "air_date",
+  value: unknown
+): void {
+  if (value == null) return;
+  if (typeof value !== "string" || !isCanonicalDateOnly(value)) {
+    throw new Error(`${field} must be null or canonical YYYY-MM-DD`);
+  }
+}
+
 // ---- Subscriptions ----
 
 export function getAllSubscriptions(): Subscription[] {
@@ -114,6 +125,7 @@ export function getSubscriptionBySourceId(
 export function createSubscription(
   sub: Omit<Subscription, "id" | "created_at" | "updated_at">
 ): Subscription {
+  assertCanonicalDateValue("first_air_date", sub.first_air_date);
   const result = db
     .prepare(
       `INSERT INTO subscriptions (source, source_id, media_type, title, title_original, overview, poster_path, backdrop_path, first_air_date, vote_average, season_number, total_episodes, status, folder_path, profile_id)
@@ -147,6 +159,9 @@ export function updateSubscription(
   const values: any[] = [];
   for (const [key, value] of Object.entries(data)) {
     if (key === "id" || key === "created_at") continue;
+    if (key === "first_air_date") {
+      assertCanonicalDateValue("first_air_date", value);
+    }
     fields.push(`${key} = ?`);
     values.push(value);
   }
@@ -176,6 +191,7 @@ export function getEpisodesBySubscription(
 export function createEpisode(
   ep: Omit<Episode, "id" | "created_at" | "updated_at">
 ): Episode {
+  assertCanonicalDateValue("air_date", ep.air_date);
   const result = db
     .prepare(
       `INSERT INTO episodes (subscription_id, season_number, episode_number, title, air_date, overview, still_path, status, torrent_hash, file_path)
@@ -203,6 +219,9 @@ export function updateEpisode(id: number, data: Partial<Episode>): void {
   const values: any[] = [];
   for (const [key, value] of Object.entries(data)) {
     if (key === "id" || key === "created_at") continue;
+    if (key === "air_date") {
+      assertCanonicalDateValue("air_date", value);
+    }
     fields.push(`${key} = ?`);
     values.push(value);
   }

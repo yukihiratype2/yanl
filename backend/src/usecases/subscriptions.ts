@@ -5,6 +5,7 @@ import * as fileManager from "../services/fileManager";
 import * as qbittorrent from "../services/qbittorrent";
 import { logger as baseLogger } from "../services/logger";
 import { err, ok, type Result } from "../lib/result";
+import { normalizeDateOnly } from "../lib/date";
 
 export type CreateSubscriptionInput = {
   source?: "tvdb" | "bgm";
@@ -38,6 +39,17 @@ const defaultDeps: SubscriptionDeps = {
   qbittorrent,
   logger: baseLogger,
 };
+
+class InvalidCoreExternalDateError extends Error {
+  readonly status = 422;
+  readonly details: Record<string, unknown>;
+
+  constructor(message: string, details: Record<string, unknown>) {
+    super(message);
+    this.name = "InvalidCoreExternalDateError";
+    this.details = details;
+  }
+}
 
 export async function createSubscriptionWithEpisodes(
   input: CreateSubscriptionInput,
@@ -116,6 +128,9 @@ export async function createSubscriptionWithEpisodes(
 
     return ok(subscription);
   } catch (error: any) {
+    if (error instanceof InvalidCoreExternalDateError) {
+      return err(error.status, error.message, error.details);
+    }
     return err(500, error?.message || "Failed to create subscription");
   }
 }
@@ -165,6 +180,65 @@ function collectTorrentHashes(
   return hashSet;
 }
 
+type ExternalDateParseResult =
+  | { type: "empty"; value: null }
+  | { type: "normalized"; value: string }
+  | { type: "invalid"; value: string };
+
+function parseExternalDate(value: string | null | undefined): ExternalDateParseResult {
+  if (value == null) return { type: "empty", value: null };
+
+  const trimmed = value.trim();
+  if (!trimmed) return { type: "empty", value: null };
+
+  const normalized = normalizeDateOnly(trimmed);
+  if (normalized) return { type: "normalized", value: normalized };
+  return { type: "invalid", value: trimmed };
+}
+
+function normalizeCoreExternalDate(
+  value: string | null | undefined,
+  deps: SubscriptionDeps,
+  context: Record<string, unknown>
+): string | null {
+  const parsed = parseExternalDate(value);
+  if (parsed.type === "normalized" || parsed.type === "empty") {
+    return parsed.value;
+  }
+
+  deps.logger.warn(
+    {
+      ...context,
+      date: parsed.value,
+    },
+    "Received invalid core date from external source"
+  );
+  throw new InvalidCoreExternalDateError("Invalid date received from external source", {
+    ...context,
+    date: parsed.value,
+  });
+}
+
+function normalizeEpisodeExternalDate(
+  value: string | null | undefined,
+  deps: SubscriptionDeps,
+  context: Record<string, unknown>
+): { shouldSkip: boolean; value: string | null } {
+  const parsed = parseExternalDate(value);
+  if (parsed.type === "normalized" || parsed.type === "empty") {
+    return { shouldSkip: false, value: parsed.value };
+  }
+
+  deps.logger.warn(
+    {
+      ...context,
+      date: parsed.value,
+    },
+    "Skipping episode with invalid air_date from external source"
+  );
+  return { shouldSkip: true, value: null };
+}
+
 async function fetchSubscriptionMetadata(
   source: "tvdb" | "bgm",
   mediaType: "anime" | "tv" | "movie",
@@ -190,7 +264,12 @@ async function fetchSubscriptionMetadata(
       overview: detail.summary || null,
       poster_path: detail.images?.medium ?? detail.images?.small ?? null,
       backdrop_path: detail.images?.large ?? null,
-      first_air_date: detail.date ?? null,
+      first_air_date: normalizeCoreExternalDate(detail.date, deps, {
+        source,
+        sourceId,
+        mediaType,
+        field: "first_air_date",
+      }),
       vote_average: detail.rating?.score ?? null,
       total_episodes: detail.total_episodes ?? detail.eps ?? null,
       season_number: seasonNumber,
@@ -205,7 +284,12 @@ async function fetchSubscriptionMetadata(
       overview: detail.overview,
       poster_path: detail.poster_path,
       backdrop_path: detail.backdrop_path,
-      first_air_date: detail.release_date,
+      first_air_date: normalizeCoreExternalDate(detail.release_date, deps, {
+        source,
+        sourceId,
+        mediaType,
+        field: "first_air_date",
+      }),
       vote_average: detail.vote_average,
       total_episodes: null,
       season_number: seasonNumber,
@@ -225,7 +309,12 @@ async function fetchSubscriptionMetadata(
     overview: detail.overview,
     poster_path: detail.poster_path,
     backdrop_path: detail.backdrop_path,
-    first_air_date: detail.first_air_date,
+    first_air_date: normalizeCoreExternalDate(detail.first_air_date, deps, {
+      source,
+      sourceId,
+      mediaType,
+      field: "first_air_date",
+    }),
     vote_average: detail.vote_average,
     total_episodes: totalEpisodes,
     season_number: seasonNumber,
@@ -244,12 +333,21 @@ async function createInitialEpisodes(
         subscription.season_number
       );
       for (const ep of seasonDetail.episodes) {
+        const airDate = normalizeEpisodeExternalDate(ep.air_date, deps, {
+          source,
+          sourceId: subscription.source_id,
+          subscriptionId: subscription.id,
+          seasonNumber: subscription.season_number,
+          episodeNumber: ep.episode_number,
+          field: "air_date",
+        });
+        if (airDate.shouldSkip) continue;
         deps.models.createEpisode({
           subscription_id: subscription.id,
           season_number: subscription.season_number,
           episode_number: ep.episode_number,
           title: ep.name,
-          air_date: ep.air_date,
+          air_date: airDate.value,
           overview: ep.overview,
           still_path: ep.still_path,
           status: "pending",
@@ -270,13 +368,20 @@ async function createInitialEpisodes(
         const episodeNumber = Number(numberRaw);
         if (!Number.isInteger(episodeNumber) || episodeNumber <= 0) continue;
         const titleText = ep.name_cn || ep.name || null;
-        const airDate = ep.airdate && ep.airdate.trim().length > 0 ? ep.airdate : null;
+        const airDate = normalizeEpisodeExternalDate(ep.airdate, deps, {
+          source,
+          sourceId: subscription.source_id,
+          subscriptionId: subscription.id,
+          episodeNumber,
+          field: "air_date",
+        });
+        if (airDate.shouldSkip) continue;
         deps.models.createEpisode({
           subscription_id: subscription.id,
           season_number: null,
           episode_number: episodeNumber,
           title: titleText,
-          air_date: airDate,
+          air_date: airDate.value,
           overview: ep.desc || null,
           still_path: null,
           status: "pending",

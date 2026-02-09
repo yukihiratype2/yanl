@@ -37,67 +37,6 @@ const JOB_SCHEDULES: Record<JobName, string> = {
 
 const jobs: Map<string, JobEntry> = new Map();
 
-function computeNextRun(expression: string, from: Date): Date | null {
-  // Simple cron next-run calculator for standard 5-field cron expressions
-  // Format: minute hour day-of-month month day-of-week
-  const parts = expression.trim().split(/\s+/);
-  if (parts.length !== 5) return null;
-
-  const parseField = (field: string, min: number, max: number): number[] => {
-    const values: number[] = [];
-    for (const part of field.split(",")) {
-      if (part === "*") {
-        for (let i = min; i <= max; i++) values.push(i);
-      } else if (part.includes("/")) {
-        const [range, stepStr] = part.split("/");
-        const step = parseInt(stepStr);
-        const start = range === "*" ? min : parseInt(range);
-        for (let i = start; i <= max; i += step) values.push(i);
-      } else if (part.includes("-")) {
-        const [a, b] = part.split("-").map(Number);
-        for (let i = a; i <= b; i++) values.push(i);
-      } else {
-        values.push(parseInt(part));
-      }
-    }
-    return values.sort((a, b) => a - b);
-  };
-
-  const minutes = parseField(parts[0], 0, 59);
-  const hours = parseField(parts[1], 0, 23);
-  const daysOfMonth = parseField(parts[2], 1, 31);
-  const months = parseField(parts[3], 1, 12);
-  const daysOfWeek = parseField(parts[4], 0, 6);
-
-  const isWildcardDom = parts[2] === "*";
-  const isWildcardDow = parts[4] === "*";
-
-  // Brute-force search for next matching minute in the next 366 days
-  const candidate = new Date(from);
-  candidate.setSeconds(0, 0);
-  candidate.setMinutes(candidate.getMinutes() + 1); // start from next minute
-
-  for (let i = 0; i < 366 * 24 * 60; i++) {
-    const m = candidate.getMinutes();
-    const h = candidate.getHours();
-    const dom = candidate.getDate();
-    const mon = candidate.getMonth() + 1;
-    const dow = candidate.getDay();
-
-    if (
-      minutes.includes(m) &&
-      hours.includes(h) &&
-      months.includes(mon) &&
-      (isWildcardDom || daysOfMonth.includes(dom)) &&
-      (isWildcardDow || daysOfWeek.includes(dow))
-    ) {
-      return candidate;
-    }
-    candidate.setMinutes(candidate.getMinutes() + 1);
-  }
-  return null;
-}
-
 function registerJob(
   name: string,
   description: string,
@@ -155,7 +94,7 @@ export function getJobStatuses(): JobStatus[] {
     lastRunAt: j.lastRunAt?.toISOString() ?? null,
     lastRunDurationMs: j.lastRunDurationMs,
     lastRunError: j.lastRunError,
-    nextRunAt: computeNextRun(j.schedule, new Date())?.toISOString() ?? null,
+    nextRunAt: j.task?.getNextRun()?.toISOString() ?? null,
   }));
 }
 

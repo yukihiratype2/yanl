@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { join } from "path";
 import { mkdirSync } from "fs";
 import { logger } from "../services/logger";
+import { normalizeDateOnly } from "../lib/date";
 
 const dataDir = join(import.meta.dir, "..", "..", "data");
 mkdirSync(dataDir, { recursive: true });
@@ -15,6 +16,124 @@ db.run("PRAGMA journal_mode = WAL");
 db.run("PRAGMA foreign_keys = ON");
 
 export default db;
+
+type DateBackfillTarget = {
+  table: "subscriptions" | "episodes";
+  column: "first_air_date" | "air_date";
+};
+
+type InvalidDateSample = {
+  table: DateBackfillTarget["table"];
+  column: DateBackfillTarget["column"];
+  rowId: number;
+  value: string;
+};
+
+type DateBackfillStats = {
+  scanned: number;
+  normalized: number;
+  unchanged: number;
+  invalid: number;
+};
+
+function backfillDateColumn(
+  target: DateBackfillTarget,
+  invalidSamples: InvalidDateSample[]
+): DateBackfillStats {
+  const rows = db
+    .prepare(
+      `SELECT id, ${target.column} AS value
+       FROM ${target.table}
+       WHERE ${target.column} IS NOT NULL AND TRIM(${target.column}) <> ''`
+    )
+    .all() as Array<{ id: number; value: unknown }>;
+
+  const update = db.prepare(
+    `UPDATE ${target.table}
+     SET ${target.column} = ?, updated_at = datetime('now')
+     WHERE id = ?`
+  );
+
+  const stats: DateBackfillStats = {
+    scanned: 0,
+    normalized: 0,
+    unchanged: 0,
+    invalid: 0,
+  };
+
+  for (const row of rows) {
+    const rawValue = String(row.value);
+    const trimmed = rawValue.trim();
+    stats.scanned += 1;
+
+    const normalized = normalizeDateOnly(trimmed);
+    if (!normalized) {
+      stats.invalid += 1;
+      if (invalidSamples.length < 10) {
+        invalidSamples.push({
+          table: target.table,
+          column: target.column,
+          rowId: row.id,
+          value: rawValue,
+        });
+      }
+      continue;
+    }
+
+    if (normalized === rawValue) {
+      stats.unchanged += 1;
+      continue;
+    }
+
+    update.run(normalized, row.id);
+    stats.normalized += 1;
+  }
+
+  return stats;
+}
+
+function backfillMediaDateColumns() {
+  const targets: DateBackfillTarget[] = [
+    { table: "subscriptions", column: "first_air_date" },
+    { table: "episodes", column: "air_date" },
+  ];
+  const summary: DateBackfillStats = {
+    scanned: 0,
+    normalized: 0,
+    unchanged: 0,
+    invalid: 0,
+  };
+  const invalidSamples: InvalidDateSample[] = [];
+
+  for (const target of targets) {
+    const stats = backfillDateColumn(target, invalidSamples);
+    summary.scanned += stats.scanned;
+    summary.normalized += stats.normalized;
+    summary.unchanged += stats.unchanged;
+    summary.invalid += stats.invalid;
+    logger.info(
+      {
+        table: target.table,
+        column: target.column,
+        ...stats,
+      },
+      "Date normalization backfill completed for column"
+    );
+  }
+
+  logger.info(summary, "Date normalization backfill summary");
+
+  if (summary.invalid > 0) {
+    logger.error(
+      {
+        invalid: summary.invalid,
+        sample: invalidSamples,
+      },
+      "Invalid date values remain after startup normalization backfill"
+    );
+    throw new Error("Database contains invalid date values");
+  }
+}
 
 export function initDatabase() {
   db.exec(`
@@ -190,5 +309,6 @@ export function initDatabase() {
     ensureColumn("subscriptions", "source_id", "source_id INTEGER");
   }
 
+  backfillMediaDateColumns();
   logger.info("Database initialized successfully");
 }

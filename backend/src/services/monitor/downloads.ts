@@ -16,16 +16,18 @@ import {
 import * as rss from "../rss";
 import * as qbittorrent from "../qbittorrent";
 import { logger } from "../logger";
-import { getTodayISO, parseMagnetHash } from "./utils";
+import { getTodayDateOnly, parseMagnetHash } from "./utils";
 import { isTitleMatch, matchesEpisodeSeason, matchesProfile } from "./matchers";
+import { isOnOrBeforeDateOnly } from "../../lib/date";
 
 export async function searchAndDownload() {
   const subscriptions = getActiveSubscriptions();
-  const today = getTodayISO();
+  const today = getTodayDateOnly();
+  const invalidAirDateWarnings = new Set<string>();
 
   for (const sub of subscriptions) {
     if (sub.media_type === "tv" || sub.media_type === "anime") {
-      await searchEpisodesForSubscription(sub, today);
+      await searchEpisodesForSubscription(sub, today, invalidAirDateWarnings);
       continue;
     }
 
@@ -35,17 +37,50 @@ export async function searchAndDownload() {
   }
 }
 
-function getPendingEpisodes(episodes: Episode[], today: string): Episode[] {
+function getPendingEpisodes(
+  episodes: Episode[],
+  sub: Subscription,
+  today: string,
+  invalidAirDateWarnings: Set<string>
+): Episode[] {
   return episodes.filter((e) => {
     if (e.status !== "pending") return false;
     if (!e.air_date) return true;
-    return e.air_date <= today;
+
+    const isReleased = isOnOrBeforeDateOnly(e.air_date, today);
+    if (isReleased === null) {
+      const key = `${sub.id}:${e.air_date}`;
+      if (!invalidAirDateWarnings.has(key)) {
+        invalidAirDateWarnings.add(key);
+        logger.warn(
+          {
+            subscriptionId: sub.id,
+            subscription: sub.title,
+            episodeId: e.id,
+            episode: e.episode_number,
+            air_date: e.air_date,
+          },
+          "Skipping pending episode with unparseable air_date"
+        );
+      }
+      return false;
+    }
+    return isReleased;
   });
 }
 
-async function searchEpisodesForSubscription(sub: Subscription, today: string) {
+async function searchEpisodesForSubscription(
+  sub: Subscription,
+  today: string,
+  invalidAirDateWarnings: Set<string>
+) {
   const episodes = getEpisodesBySubscription(sub.id);
-  const pendingEps = getPendingEpisodes(episodes, today);
+  const pendingEps = getPendingEpisodes(
+    episodes,
+    sub,
+    today,
+    invalidAirDateWarnings
+  );
   if (pendingEps.length === 0) return;
 
   const profile = getProfileForSubscription(sub);

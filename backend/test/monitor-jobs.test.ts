@@ -7,7 +7,11 @@ mock.module("node-cron", () => ({
   default: {
     schedule: (expr: string, fn: () => void) => {
       scheduled.push({ expr, fn });
-      return { start: () => {}, stop: () => {} };
+      return {
+        start: () => {},
+        stop: () => {},
+        getNextRun: () => new Date("2024-01-01T00:00:00.000Z"),
+      };
     },
   },
 }));
@@ -73,9 +77,7 @@ describe("monitor/jobs", () => {
     const statuses = jobs.getJobStatuses();
     expect(statuses.length).toBe(3);
     for (const status of statuses) {
-      expect(
-        typeof status.nextRunAt === "string" || status.nextRunAt === null
-      ).toBe(true);
+      expect(status.nextRunAt).toBe("2024-01-01T00:00:00.000Z");
     }
   });
 
