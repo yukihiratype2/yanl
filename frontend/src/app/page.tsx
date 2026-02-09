@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Loader2, Star, Tv, X } from "lucide-react";
+import { ExternalLink, Loader2, Star, Tv, X, Calendar as CalendarIcon } from "lucide-react";
 import Image from "next/image";
 import {
   getBgmCalendar,
@@ -15,6 +15,7 @@ import { getSubscriptions, subscribe, type Subscription } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getErrorMessage } from "@/lib/errors";
+import { cn } from "@/lib/utils";
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 7];
 const WEEKDAY_LABELS: Record<number, string> = {
@@ -40,11 +41,17 @@ export default function MediaListPage() {
   const [subscribedMap, setSubscribedMap] = useState<
     Record<number, Subscription>
   >({});
-  const [subsLoading, setSubsLoading] = useState(false);
   const [subscribeState, setSubscribeState] = useState<{
     status: "idle" | "loading" | "success" | "error";
     message?: string;
   }>({ status: "idle" });
+
+  const todayWeekdayId = useMemo(() => {
+    const day = new Date().getDay();
+    return day === 0 ? 7 : day;
+  }, []);
+
+  const [activeTabId, setActiveTabId] = useState<number>(todayWeekdayId);
 
   useEffect(() => {
     loadCalendar();
@@ -67,7 +74,6 @@ export default function MediaListPage() {
 
   async function loadSubscriptions() {
     try {
-      setSubsLoading(true);
       const subs = await getSubscriptions("active");
       const nextMap: Record<number, Subscription> = {};
       for (const sub of subs) {
@@ -78,8 +84,6 @@ export default function MediaListPage() {
       setSubscribedMap(nextMap);
     } catch (err: unknown) {
       console.warn("Failed to load subscriptions:", getErrorMessage(err));
-    } finally {
-      setSubsLoading(false);
     }
   }
 
@@ -104,10 +108,9 @@ export default function MediaListPage() {
     });
   }, [calendar]);
 
-  const todayWeekdayId = useMemo(() => {
-    const day = new Date().getDay();
-    return day === 0 ? 7 : day;
-  }, []);
+  const activeDay = useMemo(() => {
+    return orderedDays.find((d) => d.weekday.id === activeTabId);
+  }, [orderedDays, activeTabId]);
 
   useEffect(() => {
     if (!selectedItem) {
@@ -219,374 +222,303 @@ export default function MediaListPage() {
     selectedItem != null ? subscribedMap[selectedItem.id] : null;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Tv className="w-6 h-6" /> Media List
+          <Tv className="w-6 h-6" /> Media Calendar
         </h1>
+        <div className="text-sm text-muted-foreground">
+           BGM.tv Data Source
+        </div>
       </div>
 
-      <section className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-          <span className="text-sm font-semibold">BGM.tv</span>
-          <span className="text-xs text-muted-foreground">
-            Weekly broadcast calendar
-          </span>
+      <div className="space-y-4">
+        <div className="flex items-center justify-center p-1 bg-muted/60 rounded-xl overflow-x-auto no-scrollbar">
+          {orderedDays.map((day) => {
+            const isToday = day.weekday.id === todayWeekdayId;
+            const isActive = day.weekday.id === activeTabId;
+            return (
+              <button
+                key={day.weekday.id}
+                onClick={() => setActiveTabId(day.weekday.id)}
+                className={cn(
+                  "flex-1 min-w-[60px] relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out",
+                  isActive
+                    ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
+                  isToday && !isActive && "text-primary font-semibold"
+                )}
+              >
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="leading-none">{day.weekday.en || WEEKDAY_LABELS[day.weekday.id]}</span>
+                  {day.weekday.cn && <span className="text-[10px] opacity-80 leading-none">{day.weekday.cn}</span>}
+                </div>
+                {isToday && (
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {loading && (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground animate-pulse">Loading calendar...</p>
           </div>
-        )}
+        ) : error ? (
+           <div className="flex flex-col items-center justify-center py-20 gap-2 text-red-500">
+             <p>{error}</p>
+             <Button variant="outline" onClick={() => loadCalendar()}>Retry</Button>
+           </div>
+        ) : !activeDay?.items.length ? (
+          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
+            <CalendarIcon className="w-10 h-10 mb-2 opacity-20" />
+            <p>No episodes scheduled for {activeDay?.weekday.en || "this day"}.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {activeDay.items.map((item) => {
+              const title = item.name_cn || item.name;
+              const image =
+                item.images?.large ||
+                item.images?.common ||
+                item.images?.medium ||
+                item.images?.grid ||
+                "/placeholder.svg";
+              const isSubscribed = Boolean(subscribedMap[item.id]);
+              const ratingValue = item.rating?.score;
 
-        {error && !loading && (
-          <div className="px-4 py-6 text-sm text-red-500">{error}</div>
-        )}
-
-        {!loading && !error && (
-          <div className="divide-y divide-border">
-            {orderedDays.map((day) => (
-              <div key={day.weekday.id} className="flex gap-4 p-4">
-                <div className="w-20 shrink-0">
-                  <div
-                    className={[
-                      "text-sm font-semibold",
-                      day.weekday.id === todayWeekdayId
-                        ? "text-primary text-base"
-                        : "",
-                    ].join(" ")}
-                  >
-                    {day.weekday.en || WEEKDAY_LABELS[day.weekday.id]}
-                  </div>
-                  {day.weekday.cn && (
-                    <div
-                      className={[
-                        "text-xs text-muted-foreground",
-                        day.weekday.id === todayWeekdayId
-                          ? "text-primary/90 font-semibold"
-                          : "",
-                      ].join(" ")}
-                    >
-                      {day.weekday.cn}
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 overflow-x-auto no-scrollbar">
-                  <div className="flex gap-4 min-w-max pr-4 pb-2">
-                    {day.items.length === 0 && (
-                      <div className="text-sm text-muted-foreground py-3">
-                        No shows today
-                      </div>
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => openDetail(item)}
+                  className="group relative flex flex-col gap-2 cursor-pointer"
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-muted shadow-sm transition-all duration-300 group-hover:shadow-md group-hover:scale-[1.02]">
+                    <Image
+                      src={image}
+                      alt={title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    
+                    {isSubscribed && (
+                      <Badge
+                        className="absolute right-2 top-2 z-10 bg-emerald-500 hover:bg-emerald-600 shadow-sm"
+                      >
+                        Subscribed
+                      </Badge>
                     )}
-                    {day.items.map((item) => {
-                      const title = item.name_cn || item.name;
-                      const image =
-                        item.images?.medium ||
-                        item.images?.small ||
-                        item.images?.grid ||
-                        "/placeholder.svg";
-                      const isSubscribed = Boolean(subscribedMap[item.id]);
-                      const ratingValue = item.rating?.score;
-                      const ratingText =
-                        ratingValue != null ? ratingValue.toFixed(1) : "N/A";
-                      const episodeCount = item.eps ?? item.eps_count;
 
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => openDetail(item)}
-                          className={[
-                            "group w-64 flex-shrink-0 rounded-xl border",
-                            "border-border/60 bg-background/60",
-                            "hover:bg-secondary transition-colors",
-                            "text-left",
-                          ].join(" ")}
-                          title={title}
-                        >
-                          <div className="flex gap-3 p-3">
-                            <div className="relative">
-                              <Image
-                                src={image}
-                                alt=""
-                                width={80}
-                                height={112}
-                                sizes="80px"
-                                className="w-20 h-28 object-cover rounded-lg shrink-0"
-                              />
-                              {isSubscribed && (
-                                <Badge
-                                  className={[
-                                    "absolute left-1 top-1 h-5 border-transparent",
-                                    "bg-emerald-500/90 text-[10px] text-white",
-                                  ].join(" ")}
-                                >
-                                  Subscribed
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-semibold truncate">
-                                {title}
-                              </div>
-                              {item.name && item.name !== title && (
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {item.name}
-                                </div>
-                              )}
-                              <div className="mt-2 flex items-center gap-1 text-xs">
-                                <Star className="w-3.5 h-3.5 text-amber-500" />
-                                <span className="font-semibold">
-                                  {ratingText}
-                                </span>
-                                {ratingValue != null && (
-                                  <span className="text-muted-foreground">
-                                    / 10
-                                  </span>
-                                )}
-                              </div>
-                              {episodeCount != null && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {episodeCount} episodes
-                                </div>
-                              )}
-                              {item.air_date && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {item.air_date}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full transition-transform duration-300 group-hover:translate-y-0">
+                      <div className="flex items-center gap-1 text-white text-xs font-medium">
+                         <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                         <span>{ratingValue?.toFixed(1) || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 px-1">
+                    <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                      {title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{item.air_date ? item.air_date.split("-").slice(1).join("/") : "Unknown"}</span>
+                      {item.eps || item.eps_count ? (
+                        <span>{item.eps || item.eps_count} ep</span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
-      </section>
+      </div>
 
       {selectedItem && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={closeDetail}
         >
           <div
-            className="w-full max-w-3xl rounded-xl bg-card border border-border shadow-xl"
+            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between p-4 border-b border-border">
-              <div>
-                <div className="text-lg font-semibold">
+            <div className="sticky top-0 z-10 flex items-start justify-between p-4 border-b border-border bg-card/80 backdrop-blur-md">
+              <div className="pr-8">
+                <div className="text-lg font-bold leading-tight">
                   {selectedItem.name_cn || selectedItem.name}
                 </div>
                 {selectedItem.name_cn &&
                   selectedItem.name &&
                   selectedItem.name !== selectedItem.name_cn && (
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground mt-0.5">
                       {selectedItem.name}
                     </div>
                   )}
-                {selectedSubscribed && (
-                  <Badge
-                    className={[
-                      "mt-2 h-5 border-transparent",
-                      "bg-emerald-500/90 text-xs text-white",
-                    ].join(" ")}
-                  >
-                    Subscribed
-                  </Badge>
-                )}
               </div>
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
+                className="shrink-0 -mr-2 rounded-full"
                 onClick={closeDetail}
               >
                 <X className="w-5 h-5" />
               </Button>
             </div>
 
-            <div className="p-4 grid gap-4 md:grid-cols-[180px,1fr]">
-              <Image
-                src={
-                  detail?.images?.large ||
-                  detail?.images?.medium ||
-                  selectedItem.images?.medium ||
-                  detail?.images?.small ||
-                  selectedItem.images?.small ||
-                  "/placeholder.svg"
-                }
-                alt=""
-                width={180}
-                height={270}
-                sizes="180px"
-                className="w-full max-w-[180px] rounded-lg object-cover"
-              />
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Star className="w-4 h-4 text-amber-500" />
-                  <span className="font-semibold">
+            <div className="p-5 grid gap-6 md:grid-cols-[200px,1fr]">
+              <div className="mx-auto w-[200px] shrink-0 space-y-3">
+                 <div className="aspect-[3/4] relative rounded-lg overflow-hidden shadow-md">
+                   <Image
+                    src={
+                      detail?.images?.large ||
+                      detail?.images?.medium ||
+                      selectedItem.images?.medium ||
+                      detail?.images?.small ||
+                      selectedItem.images?.small ||
+                      "/placeholder.svg"
+                    }
+                    alt=""
+                    fill
+                    className="object-cover"
+                  />
+                 </div>
+                 
+                 <Button
+                    type="button"
+                    className={cn(
+                        "w-full gap-2 transition-all",
+                        selectedSubscribed ? "bg-emerald-600 hover:bg-emerald-700" : ""
+                    )}
+                    onClick={handleSubscribe}
+                    disabled={
+                      subscribeState.status === "loading" ||
+                      subscribeState.status === "success" ||
+                      Boolean(selectedSubscribed)
+                    }
+                  >
+                    {subscribeState.status === "loading" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : selectedSubscribed ? (
+                         <div className="flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                             Subscribed
+                         </div>
+                    ) : (
+                        "Subscribe"
+                    )}
+                  </Button>
+                  {subscribeState.status === "error" && (
+                     <div className="text-xs text-red-500 text-center font-medium">
+                         {subscribeState.message}
+                     </div>
+                  )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                  <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-600 px-2.5 py-1 rounded-md font-medium dark:text-amber-400 dark:bg-amber-500/20">
+                    <Star className="w-4 h-4 fill-current" />
                     {detail?.rating?.score != null
                       ? detail.rating.score.toFixed(1)
                       : selectedItem.rating?.score != null
                         ? selectedItem.rating.score.toFixed(1)
                         : "N/A"}
-                  </span>
-                  {(detail?.rating?.score ?? selectedItem.rating?.score) !=
-                    null && (
-                    <span className="text-muted-foreground">/ 10</span>
-                  )}
-                  {detail?.rating?.rank != null && (
-                    <span className="text-xs text-muted-foreground">
-                      Rank #{detail.rating.rank}
-                    </span>
-                  )}
-                  {detail?.rating?.total != null && (
-                    <span className="text-xs text-muted-foreground">
-                      {detail.rating.total} votes
-                    </span>
-                  )}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {(detail?.date || selectedItem.air_date) && (
-                    <span>
-                      Air date: {detail?.date || selectedItem.air_date}
-                    </span>
-                  )}
-                  {(detail?.date || selectedItem.air_date) &&
-                    (detail?.total_episodes ??
-                      detail?.eps ??
-                      selectedItem.eps ??
-                      selectedItem.eps_count) != null && (
-                      <span className="mx-2">•</span>
-                    )}
+                  </div>
+                  
                   {(detail?.total_episodes ??
                     detail?.eps ??
                     selectedItem.eps ??
                     selectedItem.eps_count) != null && (
-                    <span>
-                      {detail?.total_episodes ??
+                    <div className="flex items-center gap-1.5 text-muted-foreground px-2 py-1 bg-secondary rounded-md">
+                       <Tv className="w-4 h-4" />
+                       {detail?.total_episodes ??
                         detail?.eps ??
                         selectedItem.eps ??
                         selectedItem.eps_count}{" "}
                       episodes
-                    </span>
+                    </div>
                   )}
-                  {detail?.platform && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <span>{detail.platform}</span>
-                    </>
-                  )}
-                </div>
-                {detailLoading && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Loading details...
-                  </div>
-                )}
-                {detailError && (
-                  <div className="text-xs text-red-500">{detailError}</div>
-                )}
-                {(detail?.summary || selectedItem.summary) && (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {detail?.summary || selectedItem.summary}
-                  </p>
-                )}
-                {detail?.collection && (
-                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-5">
-                    <div className="rounded-md bg-secondary/60 px-2 py-1">
-                      Wish {detail.collection.wish}
-                    </div>
-                    <div className="rounded-md bg-secondary/60 px-2 py-1">
-                      Collect {detail.collection.collect}
-                    </div>
-                    <div className="rounded-md bg-secondary/60 px-2 py-1">
-                      Doing {detail.collection.doing}
-                    </div>
-                    <div className="rounded-md bg-secondary/60 px-2 py-1">
-                      Hold {detail.collection.on_hold}
-                    </div>
-                    <div className="rounded-md bg-secondary/60 px-2 py-1">
-                      Dropped {detail.collection.dropped}
-                    </div>
-                  </div>
-                )}
-                {tagItems.length > 0 && (
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {tagItems.map((tag) => (
-                      <Badge
-                        key={tag.label}
-                        variant="secondary"
-                        className="h-5 border-transparent bg-secondary/70 text-muted-foreground"
-                      >
-                        {tag.label}
-                        {tag.count != null && (
-                          <span className="ml-1 text-[10px]">
-                            {tag.count}
-                          </span>
-                        )}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                {infoboxItems.length > 0 && (
-                  <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                    {infoboxItems.map((item) => (
-                      <div key={item.key} className="truncate">
-                        <span className="font-semibold text-foreground">
-                          {item.key}
-                        </span>
-                        : {formatInfoboxValue(item.value)}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <a
-                  href={selectedItem.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-                >
-                  View on BGM.tv <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between gap-4 p-4 border-t border-border">
-              <div className="text-sm">
-                {subscribeState.status === "error" && (
-                  <span className="text-red-500">{subscribeState.message}</span>
+                   {(detail?.date || selectedItem.air_date) && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground px-2 py-1 bg-secondary rounded-md">
+                        <CalendarIcon className="w-4 h-4" />
+                        {detail?.date || selectedItem.air_date}
+                      </div>
+                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                      Synopsis
+                      {detailLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                  </h4>
+                   {detailError ? (
+                      <div className="text-sm text-red-500">{detailError}</div>
+                   ) : (
+                       <p className="text-sm leading-relaxed text-muted-foreground/90 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                         {detail?.summary || selectedItem.summary || "No summary available."}
+                      </p>
+                   )}
+                </div>
+
+                {tagItems.length > 0 && (
+                   <div className="space-y-2">
+                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tags</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {tagItems.map((tag) => (
+                          <Badge
+                            key={tag.label}
+                            variant="secondary"
+                            className="text-xs font-normal"
+                          >
+                            {tag.label}
+                            {tag.count != null && (
+                              <span className="ml-1 opacity-50">
+                                {tag.count}
+                              </span>
+                            )}
+                          </Badge>
+                        ))}
+                      </div>
+                   </div>
                 )}
-                {subscribeState.status === "success" && (
-                  <span className="text-emerald-600">
-                    {subscribeState.message}
-                  </span>
+                
+                {infoboxItems.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Information</h4>
+                      <div className="grid gap-x-8 gap-y-2 text-xs sm:grid-cols-2">
+                        {infoboxItems.map((item) => (
+                          <div key={item.key} className="flex gap-2 min-w-0">
+                            <span className="font-semibold text-foreground shrink-0">
+                              {item.key}:
+                            </span>
+                            <span className="text-muted-foreground truncate" title={formatInfoboxValue(item.value)}>
+                                {formatInfoboxValue(item.value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                  </div>
                 )}
-                {!subsLoading && selectedSubscribed && (
-                  <span className="text-emerald-600">Already subscribed</span>
-                )}
+
+                <div className="pt-2">
+                     <a
+                      href={selectedItem.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
+                    >
+                      View on BGM.tv <ExternalLink className="w-3 h-3" />
+                    </a>
+                </div>
               </div>
-              <Button
-                type="button"
-                onClick={handleSubscribe}
-                disabled={
-                  subscribeState.status === "loading" ||
-                  subscribeState.status === "success" ||
-                  Boolean(selectedSubscribed)
-                }
-              >
-                {subscribeState.status === "loading"
-                  ? "Subscribing..."
-                  : selectedSubscribed
-                    ? "Subscribed"
-                    : "Subscribe"}
-              </Button>
             </div>
           </div>
         </div>
