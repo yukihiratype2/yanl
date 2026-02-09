@@ -17,7 +17,7 @@ searchRoutes.get("/", async (c) => {
   const pageParam = c.req.query("page");
   const page = pageParam ? parseIntParam(pageParam, 1) : 1;
   const type = c.req.query("type"); // tv, movie, or undefined for multi
-  const source = (c.req.query("source") || "tvdb").toLowerCase();
+  const source = (c.req.query("source") || "tmdb").toLowerCase();
 
   if (!query) {
     return c.json({ error: "Missing query parameter 'q'" }, 400);
@@ -68,7 +68,7 @@ searchRoutes.get("/", async (c) => {
       ...results,
       results: results.results.map((item) => ({
         ...item,
-        source: "tvdb",
+        source: "tmdb",
       })),
     });
   } catch (error: any) {

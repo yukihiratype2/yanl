@@ -81,7 +81,7 @@ describe("routes/search", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(tmdbCalls[0]).toEqual({ fn: "searchMulti", args: ["test", 3] });
-    expect(body.results[0].source).toBe("tvdb");
+    expect(body.results[0].source).toBe("tmdb");
   });
 
   it("uses TMDB TV search when type=tv", async () => {

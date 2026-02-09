@@ -8,7 +8,7 @@ import { err, ok, type Result } from "../lib/result";
 import { normalizeDateOnly } from "../lib/date";
 
 export type CreateSubscriptionInput = {
-  source?: "tvdb" | "bgm";
+  source?: "tmdb" | "bgm";
   source_id?: number;
   tmdb_id?: number;
   media_type: "anime" | "tv" | "movie";
@@ -55,7 +55,7 @@ export async function createSubscriptionWithEpisodes(
   input: CreateSubscriptionInput,
   deps: SubscriptionDeps = defaultDeps
 ): Promise<Result<models.Subscription>> {
-  const source = input.source ?? "tvdb";
+  const source = input.source ?? "tmdb";
   const rawSourceId = input.source_id ?? input.tmdb_id;
   const sourceId = rawSourceId != null ? Number(rawSourceId) : null;
   const seasonNumber = input.season_number ?? null;
@@ -65,7 +65,7 @@ export async function createSubscriptionWithEpisodes(
   if (!sourceId || Number.isNaN(sourceId)) {
     return err(400, "Missing source_id");
   }
-  if (source !== "tvdb" && source !== "bgm") {
+  if (source !== "tmdb" && source !== "bgm") {
     return err(400, "Invalid source");
   }
 
@@ -240,7 +240,7 @@ function normalizeEpisodeExternalDate(
 }
 
 async function fetchSubscriptionMetadata(
-  source: "tvdb" | "bgm",
+  source: "tmdb" | "bgm",
   mediaType: "anime" | "tv" | "movie",
   sourceId: number,
   seasonNumber: number | null,
@@ -323,10 +323,10 @@ async function fetchSubscriptionMetadata(
 
 async function createInitialEpisodes(
   subscription: models.Subscription,
-  source: "tvdb" | "bgm",
+  source: "tmdb" | "bgm",
   deps: SubscriptionDeps
 ): Promise<void> {
-  if (source === "tvdb" && subscription.season_number != null) {
+  if (source === "tmdb" && subscription.season_number != null) {
     try {
       const seasonDetail = await deps.tmdb.getSeasonDetail(
         subscription.source_id,

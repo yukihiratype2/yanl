@@ -53,7 +53,7 @@ describe("monitor/matchers", () => {
   it("matches episode and season", () => {
     const sub: Subscription = {
       id: 1,
-      source: "tvdb",
+      source: "tmdb",
       source_id: 1,
       media_type: "tv",
       title: "Show",

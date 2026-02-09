@@ -76,7 +76,7 @@ describe("monitor/discovery", () => {
     activeSubscriptions = [
       {
         id: 1,
-        source: "tvdb",
+        source: "tmdb",
         media_type: "tv",
         source_id: 100,
         title: "Show",

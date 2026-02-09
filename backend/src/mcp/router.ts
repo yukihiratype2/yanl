@@ -16,7 +16,7 @@ import {
 import {
   createSubscriptionWithEpisodes,
   deleteSubscriptionWithCleanup,
-} from "../usecases/subscriptions";
+} from "../actions/subscriptions";
 
 const server = new Server(
   { name: "nas-tools", version: "1.0.0" },
@@ -69,7 +69,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: "object",
         properties: {
-          source: { type: "string", enum: ["tvdb", "bgm"] },
+          source: { type: "string", enum: ["tmdb", "bgm"] },
           source_id: { type: "number" },
           tmdb_id: { type: "number" },
           media_type: { type: "string", enum: ["anime", "tv", "movie"] },

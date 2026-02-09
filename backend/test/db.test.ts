@@ -68,7 +68,7 @@ describe("db/models", () => {
       is_default: 0,
     });
     const sub = models.createSubscription({
-      source: "tvdb",
+      source: "tmdb",
       source_id: 123,
       media_type: "tv",
       title: "Show",
@@ -119,7 +119,7 @@ describe("db/models", () => {
 
   it("backfills non-canonical dates and fails startup on remaining invalid values", () => {
     const sub = models.createSubscription({
-      source: "tvdb",
+      source: "tmdb",
       source_id: 999,
       media_type: "tv",
       title: "Backfill Show",
@@ -187,7 +187,7 @@ describe("db/models", () => {
   it("enforces canonical date-only values in model writes", () => {
     expect(() =>
       models.createSubscription({
-        source: "tvdb",
+        source: "tmdb",
         source_id: 1001,
         media_type: "tv",
         title: "Guarded Show",
@@ -206,7 +206,7 @@ describe("db/models", () => {
     ).toThrow("first_air_date must be null or canonical YYYY-MM-DD");
 
     const sub = models.createSubscription({
-      source: "tvdb",
+      source: "tmdb",
       source_id: 1002,
       media_type: "tv",
       title: "Guarded Show 2",

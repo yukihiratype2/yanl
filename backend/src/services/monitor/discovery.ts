@@ -14,7 +14,7 @@ export async function checkNewEpisodes() {
   const subscriptions = getActiveSubscriptions();
 
   for (const sub of subscriptions) {
-    if (sub.source === "tvdb" && sub.media_type === "tv") {
+    if (sub.source === "tmdb" && sub.media_type === "tv") {
       try {
         await processTVSubscription(sub);
       } catch (err) {

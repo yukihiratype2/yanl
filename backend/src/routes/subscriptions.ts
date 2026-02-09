@@ -10,7 +10,7 @@ import {
 import {
   createSubscriptionWithEpisodes,
   deleteSubscriptionWithCleanup,
-} from "../usecases/subscriptions";
+} from "../actions/subscriptions";
 
 const subscriptionRoutes = new Hono();
 
@@ -36,7 +36,7 @@ subscriptionRoutes.get("/:id", (c) => {
 // Subscribe to a media
 subscriptionRoutes.post("/", async (c) => {
   const body = await c.req.json<{
-    source?: "tvdb" | "bgm";
+    source?: "tmdb" | "bgm";
     source_id?: number;
     tmdb_id?: number;
     media_type: "anime" | "tv" | "movie";

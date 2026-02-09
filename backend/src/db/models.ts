@@ -3,7 +3,7 @@ import { isCanonicalDateOnly } from "../lib/date";
 
 export interface Subscription {
   id: number;
-  source: "tvdb" | "bgm";
+  source: "tmdb" | "bgm";
   source_id: number;
   media_type: "anime" | "tv" | "movie";
   title: string;

@@ -156,7 +156,7 @@ export function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS subscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      source TEXT NOT NULL DEFAULT 'tvdb',
+      source TEXT NOT NULL DEFAULT 'tmdb',
       source_id INTEGER NOT NULL,
       media_type TEXT NOT NULL CHECK(media_type IN ('anime', 'tv', 'movie')),
       title TEXT NOT NULL,
@@ -238,7 +238,7 @@ export function initDatabase() {
     db.exec(`
       CREATE TABLE subscriptions_new (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        source TEXT NOT NULL DEFAULT 'tvdb',
+        source TEXT NOT NULL DEFAULT 'tmdb',
         source_id INTEGER NOT NULL,
         media_type TEXT NOT NULL CHECK(media_type IN ('anime', 'tv', 'movie')),
         title TEXT NOT NULL,
@@ -282,7 +282,7 @@ export function initDatabase() {
       )
       SELECT
         id,
-        'tvdb',
+        'tmdb',
         tmdb_id,
         media_type,
         title,
@@ -305,7 +305,7 @@ export function initDatabase() {
     db.exec("ALTER TABLE subscriptions_new RENAME TO subscriptions");
     db.exec("PRAGMA foreign_keys = ON");
   } else {
-    ensureColumn("subscriptions", "source", "source TEXT NOT NULL DEFAULT 'tvdb'");
+    ensureColumn("subscriptions", "source", "source TEXT NOT NULL DEFAULT 'tmdb'");
     ensureColumn("subscriptions", "source_id", "source_id INTEGER");
   }
 
