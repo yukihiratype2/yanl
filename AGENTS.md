@@ -1,96 +1,43 @@
-# Project Overview
-NAS Tools is a self-hosted media manager that searches anime/TV/movies (TMDB/Bangumi), subscribes to shows, pulls torrents (Mikan/DMHY), dispatches them to qBittorrent, and organizes completed downloads into structured media folders via a Bun/TypeScript backend and a Next.js/Tailwind frontend.
+# Repository Guidelines
 
-## Repository Structure
-- `backend/` – Bun + Hono API server, SQLite DB, background monitor jobs, external service integrations.
-- `frontend/` – Next.js 16 app with Tailwind 4, sidebar layout, API client utilities.
-- `data/` – Runtime config and SQLite DB outputs (`config.yaml`, `nas-tools.db`).
-- `test/` – Placeholder for automated tests.  
-- `node_modules/`, `bun.lock`, `bun.lockb` – Workspace dependencies and locks.
-- `README.md` – High-level setup and feature overview.
+## Project Structure & Module Organization
+- `backend/`: Bun + Hono API, SQLite access, monitor jobs, and integrations.
+  - Core code lives in `backend/src/` (`routes/`, `services/`, `usecases/`, `middleware/`).
+  - Backend tests live in `backend/test/` as `*.test.ts` files.
+- `frontend/`: Next.js + Tailwind UI.
+  - App routes/components are under `frontend/src/app/`, `frontend/src/components/`, and `frontend/src/lib/`.
+- `data/`: runtime artifacts (`config.yaml`, `nas-tools.db`). Treat as local-only.
+- `test/`: reserved for top-level/shared test assets.
 
-## Build & Development Commands
-```bash
-# Install (workspace-aware)
-bun install
+## Build, Test, and Development Commands
+- `bun install`: install workspace dependencies.
+- `bun run dev`: run frontend + backend in workspace dev mode.
+- `bun run dev:backend` / `bun run dev:frontend`: run one service only.
+- `cd backend && bun run start`: run backend once (no watch).
+- `cd backend && bun run test`: run backend unit/integration tests.
+- `cd backend && bun run test:watch`: watch backend tests.
+- `cd frontend && bun run lint`: run ESLint checks.
+- `cd frontend && bun run build`: verify production Next.js build.
 
-# Run full dev stack (frontend + backend via workspaces)
-bun run dev
+## Coding Style & Naming Conventions
+- Language: TypeScript (ESM) across backend and frontend.
+- Follow existing style: 2-space indentation, semicolons, double quotes, focused functions.
+- API routes follow `/api/<resource>` (example: `/api/subscriptions`).
+- Prefer descriptive file names; React components use `PascalCase` (`ThemeToggle.tsx`), utility/service files use lowercase or kebab-style names.
 
-# Backend only
-cd backend
-bun run dev           # watch mode
-bun run start         # single run
+## Testing Guidelines
+- Backend uses `bun test`; place tests in `backend/test/` with `*.test.ts` suffix.
+- Add/adjust tests with functional changes (routes, monitor jobs, service logic).
+- Prefer mocks/stubs for external APIs (TMDB, Bangumi, qBittorrent, AI); avoid real torrent actions in tests.
+- For UI changes, run `frontend` lint and include manual verification notes when no UI test exists.
 
-# Frontend only
-cd frontend
-bun run dev           # Next dev server
-bun run build         # production build
-bun run start         # serve built app
-bun run lint          # ESLint
+## Commit & Pull Request Guidelines
+- Use concise, imperative commit subjects; Conventional Commit prefixes are encouraged (`feat:`, `fix:`, `refactor:`).
+- Keep commits focused; avoid mixing backend, frontend, and infra refactors without need.
+- PRs should include: purpose, key changes, test evidence (commands/output), and screenshots for UI changes.
+- Link related issues/tasks and call out config or migration impacts explicitly.
 
-# Tests
-cd backend && bun run test:ai   # AI config smoke test (hits configured AI endpoint)
-# TODO: add broader unit/integration tests
-
-# Type-check
-# TODO: add explicit type-check script (tsc) for backend/frontend
-```
-
-## Code Style & Conventions
-- Language: TypeScript (ESM) for both backend and frontend.
-- Formatting: Rely on project defaults; no Prettier config present. Keep lines ≤ ~100 chars.
-- Linting: Frontend uses `eslint` with `eslint-config-next`; backend has no dedicated linter.
-- Naming: HTTP routes follow `/api/<resource>`; services encapsulate external systems (`services/*.ts`).
-- Commits: No template provided. Use clear, imperative subjects (e.g., `Add TMDB season fetch retry`).
-
-## Architecture Notes
-```mermaid
-flowchart TD
-  UI[Next.js/Tailwind frontend] -->|REST /api| API[Hono (Bun) server]
-  API --> DB[(SQLite /data/nas-tools.db)]
-  API --> Qbit[qBittorrent WebUI]
-  API --> TMDB[TMDB API (TV/Movie metadata)]
-  API --> BGM[BGM.tv API (anime metadata)]
-  API --> RSS[RSS feeds: Mikan, DMHY]
-  API --> AI[Configurable AI chat API]
-  API --> FS[Media directories on host]
-```
-Backend boots SQLite, exposes authenticated `/api/*` routes, and runs cron-driven monitor jobs (episode checks, RSS search/download, download monitoring). Media folders are created per subscription and season. Frontend calls the REST API (token stored in `localStorage`) and renders sidebar-driven pages.
-
-## Testing Strategy
-- Backend: `bun run test:ai` validates configured AI endpoint; no other automated tests yet.
-- Frontend: `bun run lint` for static checks; no unit/e2e suites yet.
-- CI: > TODO: document CI runners and required checks (lint/tests/type-check).
-- Recommended: add backend unit tests around services/DB and integration tests for routes; add frontend component tests and API client mocks.
-
-## Security & Compliance
-- Auth: Bearer token from `data/config.yaml` (`core.api_token`), enforced on `/api/*` via middleware.
-- Secrets: Stored in `data/config.yaml`; printed API token on backend start—avoid sharing logs. Never commit populated `data/config.yaml` or `nas-tools.db`.
-- External services: qBittorrent credentials and TMDB/Bangumi/AI tokens pulled from config; treat as secrets.
-- File safety: `fileManager.deleteMediaFolder` guards against deleting outside configured media dirs.
-- Dependency scanning/licenses: > TODO: specify tooling (e.g., `bun audit`, `npm audit`, license policy).  
-- Network calls: RSS/AI/TMDB/Bangumi are outbound; ensure egress rules allow them in deployments.
-
-## Agent Guardrails
-- Do not edit or commit `data/config.yaml`, `data/nas-tools.db`, or `backend/log/` contents.
-- Avoid modifying `bun.lock`/`bun.lockb` unless intentionally changing dependencies.
-- Keep API tokens/credentials out of code, logs, and version control.
-- When running monitor jobs or torrent actions, ensure qBittorrent points to a test instance to avoid unintended downloads.
-- Large deletions (media folders) are irreversible—double-check paths before invoking file operations.
-
-## Extensibility Hooks
-- Configuration: `data/config.yaml` keys for core token, qBittorrent, TMDB, media dirs, AI endpoint/token/model.
-- Frontend API base: `NEXT_PUBLIC_API_URL` to target different backend hosts.
-- Background jobs: Add/adjust cron schedules or register new jobs in `backend/src/services/monitor.ts`.
-- RSS/Torrent parsing: Extend sources in `services/rss.ts`; enhance AI parsing via `services/ai.ts`.
-- Profiles: Customize quality/format rules via `/api/profiles` CRUD and default profile selection.
-- Media dirs: Change per-type directories via settings or config to integrate with other organizers.
-
-## Further Reading
-- `README.md`
-- `backend/src/index.ts`
-- `backend/src/services/monitor.ts`
-- `backend/src/services/rss.ts`
-- `backend/src/services/qbittorrent.ts`
-- `frontend/src/lib/api.ts`
+## Security & Configuration Tips
+- Never commit secrets or runtime data (`data/config.yaml`, `*.db`, logs).
+- Keep API tokens and service credentials out of code and screenshots.
+- When testing monitor/torrent flows, target a safe qBittorrent instance.

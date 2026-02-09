@@ -3,6 +3,8 @@ import { getSetting } from "../db/settings";
 import { logger } from "./logger";
 
 let sid: string | null = null;
+let sidBaseUrl: string | null = null;
+let loginPromise: Promise<string> | null = null;
 
 export interface QbitPathMapEntry {
   from: string;
@@ -65,14 +67,40 @@ export function mapQbitPathToLocal(path: string): string {
   return path;
 }
 
-async function getBaseUrl(): Promise<string> {
+function getBaseUrl(): string {
   const url = getSetting("qbit_url");
   if (!url) throw new Error("qBittorrent URL not configured");
   return url.replace(/\/$/, "");
 }
 
-async function login(): Promise<string> {
-  const baseUrl = await getBaseUrl();
+function appendOptionalBoolean(
+  params: URLSearchParams,
+  key: string,
+  value: boolean | undefined
+) {
+  if (value !== undefined) {
+    params.append(key, String(value));
+  }
+}
+
+function appendOptionalNumber(
+  params: URLSearchParams,
+  key: string,
+  value: number | undefined
+) {
+  if (typeof value === "number") {
+    params.append(key, String(value));
+  }
+}
+
+function encodeHashes(hashes: string | string[]): string {
+  const hashList = Array.isArray(hashes) ? hashes.join("|") : hashes;
+  const params = new URLSearchParams();
+  params.append("hashes", hashList);
+  return params.toString();
+}
+
+async function login(baseUrl: string): Promise<string> {
   const username = getSetting("qbit_username") || "admin";
   const password = getSetting("qbit_password") || "";
 
@@ -126,6 +154,7 @@ async function login(): Promise<string> {
     const match = setCookie.match(/SID=([^;]+)/);
     if (match) {
       sid = match[1];
+      sidBaseUrl = baseUrl;
       return sid;
     }
   }
@@ -141,27 +170,45 @@ async function login(): Promise<string> {
     // If we didn't get a cookie, we probably can't make authenticated requests. 
     // But let's check if the 'Ok.' meant we are authenticated (e.g. localhost bypass).
     // If bypass_local_auth is on, we might not need SID.
-    if (!sid) sid = ""; 
+    if (!sid) sid = "";
+    sidBaseUrl = baseUrl;
     return sid;
   }
 
   throw new Error("qBittorrent login failed: no SID returned");
 }
 
+async function ensureLoggedIn(baseUrl: string): Promise<string> {
+  if (sid !== null && sidBaseUrl === baseUrl) {
+    return sid;
+  }
+
+  if (!loginPromise) {
+    loginPromise = login(baseUrl).finally(() => {
+      loginPromise = null;
+    });
+  }
+
+  return loginPromise;
+}
+
 async function qbitFetch(
   path: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  if (sid === null) {
-    await login();
+  const baseUrl = getBaseUrl();
+  if (sidBaseUrl && sidBaseUrl !== baseUrl) {
+    sid = null;
+    sidBaseUrl = null;
   }
+  await ensureLoggedIn(baseUrl);
 
-  const baseUrl = await getBaseUrl();
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
   const method = (options.method || "GET").toString().toUpperCase();
-  
+  headers.Referer = baseUrl;
+
   if (sid) {
     headers["Cookie"] = `SID=${sid}`;
   }
@@ -185,9 +232,13 @@ async function qbitFetch(
       { path, method },
       "qBittorrent returned 403, refreshing session"
     );
-    await login();
+    sid = null;
+    sidBaseUrl = null;
+    await ensureLoggedIn(baseUrl);
     if (sid) {
       headers["Cookie"] = `SID=${sid}`;
+    } else {
+      delete headers["Cookie"];
     }
     try {
       response = await fetch(`${baseUrl}${path}`, {
@@ -217,6 +268,8 @@ export interface AddTorrentOptions {
   rename?: string;
   upLimit?: number;
   dlLimit?: number;
+  ratioLimit?: number;
+  seedingTimeLimit?: number;
   autoTMM?: boolean;
   sequentialDownload?: boolean;
   firstLastPiecePrio?: boolean;
@@ -271,15 +324,17 @@ export async function addTorrentByUrl(
   if (options.savepath) formData.append("savepath", options.savepath);
   if (options.category) formData.append("category", options.category);
   if (options.tags) formData.append("tags", options.tags);
-  if (options.skip_checking) formData.append("skip_checking", "true");
-  if (options.paused) formData.append("paused", "true");
-  if (options.root_folder !== undefined) formData.append("root_folder", String(options.root_folder));
+  appendOptionalBoolean(formData, "skip_checking", options.skip_checking);
+  appendOptionalBoolean(formData, "paused", options.paused);
+  appendOptionalBoolean(formData, "root_folder", options.root_folder);
   if (options.rename) formData.append("rename", options.rename);
-  if (options.upLimit) formData.append("upLimit", String(options.upLimit));
-  if (options.dlLimit) formData.append("dlLimit", String(options.dlLimit));
-  if (options.autoTMM) formData.append("autoTMM", "true");
-  if (options.sequentialDownload) formData.append("sequentialDownload", "true");
-  if (options.firstLastPiecePrio) formData.append("firstLastPiecePrio", "true");
+  appendOptionalNumber(formData, "upLimit", options.upLimit);
+  appendOptionalNumber(formData, "dlLimit", options.dlLimit);
+  appendOptionalNumber(formData, "ratioLimit", options.ratioLimit);
+  appendOptionalNumber(formData, "seedingTimeLimit", options.seedingTimeLimit);
+  appendOptionalBoolean(formData, "autoTMM", options.autoTMM);
+  appendOptionalBoolean(formData, "sequentialDownload", options.sequentialDownload);
+  appendOptionalBoolean(formData, "firstLastPiecePrio", options.firstLastPiecePrio);
 
   const response = await qbitFetch("/api/v2/torrents/add", {
     method: "POST",
@@ -291,32 +346,170 @@ export async function addTorrentByUrl(
 }
 
 export interface QBitTorrentInfo {
-  hash: string;
-  name: string;
-  size: number;
-  total_size: number;
-  progress: number;
-  dlspeed: number;
-  upspeed: number;
-  state: string; // downloading, seeding, pausedDL, etc.
-  save_path: string;
-  content_path: string;
-  category: string;
-  tags: string;
+  /** Unix timestamp when torrent was added. */
   added_on: number;
-  completion_on: number;
-  eta: number; // seconds
-  ratio: number;
+  /** Bytes left to download. */
   amount_left: number;
-  time_active: number;
+  /** Whether automatic torrent management is enabled. */
+  auto_tmm: boolean;
+  /** Estimated availability in swarm (>= 1 means full copy likely available). */
+  availability: number;
+  /** qB category string. */
+  category: string;
+  /** Bytes completed on disk. */
+  completed: number;
+  /** Unix timestamp when download completed (0 if incomplete). */
+  completion_on: number;
+  /** Full path to content root/file in qB download area. */
+  content_path: string;
+  /** Download speed limit in bytes/sec (-1 usually means unlimited). */
+  dl_limit: number;
+  /** Current download speed in bytes/sec. */
+  dlspeed: number;
+  /** Total downloaded bytes. */
+  downloaded: number;
+  /** Downloaded bytes for current session. */
+  downloaded_session: number;
+  /** ETA in seconds. */
+  eta: number;
+  /** Whether first/last piece priority is enabled. */
+  f_l_piece_prio: boolean;
+  /** Whether force start is enabled (ignores queue). */
+  force_start: boolean;
+  /** Torrent hash. */
+  hash: string;
+  /** True when torrent is marked private by tracker metadata. */
+  isPrivate: boolean;
+  /** Unix timestamp for last activity. */
+  last_activity: number;
+  /** Magnet URI for this torrent (if available). */
   magnet_uri: string;
-  isPrivate?: boolean;
-  seq_dl?: boolean;
-  f_l_piece_prio?: boolean;
+  /** Per-torrent max ratio setting. */
+  max_ratio: number;
+  /** Per-torrent max seeding time in seconds. */
+  max_seeding_time: number;
+  /** Torrent display name. */
+  name: string;
+  /** Complete peers in swarm. */
+  num_complete: number;
+  /** Incomplete peers in swarm. */
+  num_incomplete: number;
+  /** Leechers connected to this torrent. */
+  num_leechs: number;
+  /** Seeders connected to this torrent. */
+  num_seeds: number;
+  /** Queue priority/order. */
+  priority: number;
+  /** Progress in [0, 1]. */
+  progress: number;
+  /** Share ratio (uploaded/downloaded). */
+  ratio: number;
+  /** Ratio limit setting for torrent. */
+  ratio_limit: number;
+  /** Seconds until next tracker announce. */
+  reannounce: number;
+  /** Configured save path in qB. */
+  save_path: string;
+  /** Time spent seeding in seconds. */
+  seeding_time: number;
+  /** Seeding time limit for torrent in seconds. */
+  seeding_time_limit: number;
+  /** Last time torrent reached 100% (Unix timestamp). */
+  seen_complete: number;
+  /** Whether sequential download is enabled. */
+  seq_dl: boolean;
+  /** Selected size in bytes (can differ from total for partial selection). */
+  size: number;
+  /** qB state machine value. */
+  state: QBitTorrentState;
+  /** Whether super seeding mode is enabled. */
+  super_seeding: boolean;
+  /** Comma-separated tag list. */
+  tags: string;
+  /** Active time in seconds since add/start. */
+  time_active: number;
+  /** Total size in bytes. */
+  total_size: number;
+  /** Main tracker URL. */
+  tracker: string;
+  /** Upload speed limit in bytes/sec (-1 usually means unlimited). */
+  up_limit: number;
+  /** Total uploaded bytes. */
+  uploaded: number;
+  /** Uploaded bytes in current session. */
+  uploaded_session: number;
+  /** Current upload speed in bytes/sec. */
+  upspeed: number;
 }
 
+export type QBitTorrentState =
+  /** Generic error state. */
+  | "error"
+  /** Data missing from disk. */
+  | "missingFiles"
+  /** Seeding/uploading. */
+  | "uploading"
+  /** Upload paused. */
+  | "pausedUP"
+  /** Queued for uploading. */
+  | "queuedUP"
+  /** Stalled while uploading (no peers). */
+  | "stalledUP"
+  /** Rechecking data while in upload phase. */
+  | "checkingUP"
+  /** Force-started upload state. */
+  | "forcedUP"
+  /** Allocating disk space. */
+  | "allocating"
+  /** Downloading payload. */
+  | "downloading"
+  /** Downloading metadata (magnet prefetch). */
+  | "metaDL"
+  /** Download paused. */
+  | "pausedDL"
+  /** Queued for download. */
+  | "queuedDL"
+  /** Stalled while downloading. */
+  | "stalledDL"
+  /** Rechecking data while in download phase. */
+  | "checkingDL"
+  /** Force-started download state. */
+  | "forcedDL"
+  /** Checking resume data on startup. */
+  | "checkingResumeData"
+  /** Moving files. */
+  | "moving"
+  /** Unknown/unsupported state from server. */
+  | "unknown";
+
+export type QBitTorrentListFilter =
+  /** No filter. */
+  | "all"
+  /** Only downloading states. */
+  | "downloading"
+  /** Only seeding states. */
+  | "seeding"
+  /** Completed torrents. */
+  | "completed"
+  /** Stopped/paused torrents. */
+  | "stopped"
+  /** Currently active (non-idle) torrents. */
+  | "active"
+  /** Inactive/idle torrents. */
+  | "inactive"
+  /** Running torrents (not stopped). */
+  | "running"
+  /** Stalled torrents (both directions). */
+  | "stalled"
+  /** Specifically stalled while uploading. */
+  | "stalled_uploading"
+  /** Specifically stalled while downloading. */
+  | "stalled_downloading"
+  /** Errored torrents. */
+  | "errored";
+
 export interface GetTorrentsOptions {
-  filter?: string;
+  filter?: QBitTorrentListFilter;
   category?: string;
   tag?: string;
   sort?: string;
@@ -324,6 +517,25 @@ export interface GetTorrentsOptions {
   limit?: number;
   offset?: number;
   hashes?: string;
+}
+
+export interface QBitTorrentFile {
+  /** File index in torrent. */
+  index: number;
+  /** Relative file path/name in torrent. */
+  name: string;
+  /** File size in bytes. */
+  size: number;
+  /** File progress in [0, 1]. */
+  progress: number;
+  /** File priority: 0=do not download, 1=normal, 6=high, 7=maximal. */
+  priority: 0 | 1 | 6 | 7;
+  /** Whether file is marked as seed-only in piece availability logic. */
+  is_seed: boolean;
+  /** Inclusive piece index range for this file. */
+  piece_range: [number, number];
+  /** Availability for this file across peers. */
+  availability: number;
 }
 
 export async function getTorrents(
@@ -339,31 +551,106 @@ export async function getTorrents(
   if (options.offset) params.append("offset", String(options.offset));
   if (options.hashes) params.append("hashes", options.hashes);
 
-  const response = await qbitFetch(
-    `/api/v2/torrents/info?${params.toString()}`
-  );
+  const query = params.toString();
+  const path = query ? `/api/v2/torrents/info?${query}` : "/api/v2/torrents/info";
+  const response = await qbitFetch(path);
   if (!response.ok) {
     throw new Error(`Failed to get torrents: ${response.status}`);
   }
   return response.json() as Promise<QBitTorrentInfo[]>;
 }
 
+export function getManagedQbitTags(): Set<string> {
+  const raw = (getSetting("qbit_tag") || "").trim();
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+  );
+}
+
+export async function getManagedQbitTorrents(): Promise<QBitTorrentInfo[]> {
+  const managedTags = getManagedQbitTags();
+  if (managedTags.size === 0) {
+    return getTorrents();
+  }
+
+  const byHash = new Map<string, QBitTorrentInfo>();
+  const torrentsByTag = await Promise.all(
+    Array.from(managedTags).map((tag) => getTorrents({ tag }))
+  );
+
+  for (const torrents of torrentsByTag) {
+    for (const torrent of torrents) {
+      byHash.set(torrent.hash.toLowerCase(), torrent);
+    }
+  }
+
+  return Array.from(byHash.values());
+}
+
+export function hasManagedQbitTag(
+  torrent: Pick<QBitTorrentInfo, "tags">,
+  managedTags: Set<string>
+): boolean {
+  if (managedTags.size === 0) return false;
+  const torrentTags = (torrent.tags || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  return torrentTags.some((tag) => managedTags.has(tag));
+}
+
+export function isDownloadComplete(
+  torrent: Pick<QBitTorrentInfo, "progress" | "state">
+): boolean {
+  return (
+    torrent.progress === 1 ||
+    torrent.state === "uploading" ||
+    torrent.state === "stalledUP" ||
+    torrent.state === "pausedUP" ||
+    torrent.state === "queuedUP" ||
+    torrent.state === "checkingUP" ||
+    torrent.state === "forcedUP"
+  );
+}
+
+function isSeedingStopped(torrent: Pick<QBitTorrentInfo, "state">): boolean {
+  return torrent.state === "pausedUP" || torrent.state === "pausedDL";
+}
+
+export async function cleanupQbitTorrent(
+  torrent: Pick<QBitTorrentInfo, "hash" | "tags" | "state">,
+  managedTags: Set<string>,
+  context: Record<string, unknown>
+): Promise<void> {
+  if (!hasManagedQbitTag(torrent, managedTags)) return;
+  if (!isSeedingStopped(torrent)) return;
+
+  const ok = await deleteTorrents(torrent.hash, true);
+  if (ok) {
+    logger.info({ ...context, hash: torrent.hash }, "Removed qBittorrent torrent and files");
+  } else {
+    logger.warn({ ...context, hash: torrent.hash }, "Failed to remove qBittorrent torrent");
+  }
+}
+
 export async function pauseTorrents(hashes: string | string[]): Promise<boolean> {
-  const hashList = Array.isArray(hashes) ? hashes.join("|") : hashes;
   const response = await qbitFetch("/api/v2/torrents/stop", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `hashes=${hashList}`,
+    body: encodeHashes(hashes),
   });
   return response.ok;
 }
 
 export async function resumeTorrents(hashes: string | string[]): Promise<boolean> {
-  const hashList = Array.isArray(hashes) ? hashes.join("|") : hashes;
   const response = await qbitFetch("/api/v2/torrents/start", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `hashes=${hashList}`,
+    body: encodeHashes(hashes),
   });
   return response.ok;
 }
@@ -372,11 +659,13 @@ export async function deleteTorrents(
   hashes: string | string[],
   deleteFiles: boolean = false
 ): Promise<boolean> {
-  const hashList = Array.isArray(hashes) ? hashes.join("|") : hashes;
+  const params = new URLSearchParams();
+  params.append("hashes", Array.isArray(hashes) ? hashes.join("|") : hashes);
+  params.append("deleteFiles", String(deleteFiles));
   const response = await qbitFetch("/api/v2/torrents/delete", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `hashes=${hashList}&deleteFiles=${deleteFiles}`,
+    body: params.toString(),
   });
   return response.ok;
 }
@@ -384,10 +673,10 @@ export async function deleteTorrents(
 
 export async function getTorrentFiles(
   hash: string
-): Promise<{ name: string; size: number; progress: number }[]> {
-  const response = await qbitFetch(
-    `/api/v2/torrents/files?hash=${hash}`
-  );
+): Promise<QBitTorrentFile[]> {
+  const params = new URLSearchParams();
+  params.append("hash", hash);
+  const response = await qbitFetch(`/api/v2/torrents/files?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to get torrent files: ${response.status}`);
   }
@@ -400,7 +689,8 @@ export async function testConnection(): Promise<{
   error?: string;
 }> {
   try {
-    await login();
+    const baseUrl = getBaseUrl();
+    await ensureLoggedIn(baseUrl);
     const response = await qbitFetch("/api/v2/app/version");
     if (response.ok) {
       const version = await response.text();

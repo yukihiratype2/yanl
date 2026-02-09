@@ -47,7 +47,7 @@ const modelsMock = () => ({
 mock.module(modulePath("../src/db/models"), modelsMock);
 mock.module("../../db/models", modelsMock);
 
-const qbitMonitorMock = () => ({
+const qbitMock = () => ({
   getManagedQbitTags: () => new Set(["nas"]),
   getManagedQbitTorrents: async () => [
     {
@@ -60,11 +60,6 @@ const qbitMonitorMock = () => ({
   ],
   isDownloadComplete: () => true,
   cleanupQbitTorrent: async () => {},
-});
-mock.module(modulePath("../src/services/monitor/qbit"), qbitMonitorMock);
-mock.module("./qbit", qbitMonitorMock);
-
-const qbitMock = () => ({
   mapQbitPathToLocal: (path: string) => path,
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);

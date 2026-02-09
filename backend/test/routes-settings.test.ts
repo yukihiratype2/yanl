@@ -41,6 +41,11 @@ const qbitMock = () => ({
   mapQbitPathToLocal: (path: string) => path,
   getTorrents: async () => [],
   deleteTorrents: async () => true,
+  getManagedQbitTags: () => new Set<string>(),
+  getManagedQbitTorrents: async () => [],
+  hasManagedQbitTag: () => false,
+  isDownloadComplete: () => false,
+  cleanupQbitTorrent: async () => {},
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);
 mock.module("../services/qbittorrent", qbitMock);

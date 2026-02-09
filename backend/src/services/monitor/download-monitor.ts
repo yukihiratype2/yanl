@@ -9,7 +9,7 @@ import {
 } from "../../db/models";
 import * as fileManager from "../fileManager";
 import { logger } from "../logger";
-import { mapQbitPathToLocal } from "../qbittorrent";
+import * as qbittorrent from "../qbittorrent";
 import {
   buildEpisodeFilename,
   buildMovieFilename,
@@ -17,18 +17,12 @@ import {
   selectPrimaryVideoFile,
   QbitTorrent,
 } from "./utils";
-import {
-  cleanupQbitTorrent,
-  getManagedQbitTags,
-  getManagedQbitTorrents,
-  isDownloadComplete,
-} from "./qbit";
 
 export async function monitorDownloads() {
-  const managedTags = getManagedQbitTags();
+  const managedTags = qbittorrent.getManagedQbitTags();
   let qbitTorrents: QbitTorrent[];
   try {
-    qbitTorrents = await getManagedQbitTorrents();
+    qbitTorrents = await qbittorrent.getManagedQbitTorrents();
   } catch (err) {
     logger.error({ err }, "QBit connection validation failed");
     return;
@@ -76,11 +70,11 @@ async function handleDownloadingEpisode(
   if (!ep.torrent_hash) return;
 
   const torrent = findTorrentByHash(qbitTorrents, ep.torrent_hash);
-  if (!torrent || !isDownloadComplete(torrent)) return;
+  if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
   logger.info({ subscription: sub.title, episode: ep.title }, "Episode download complete");
 
-  const contentPath = mapQbitPathToLocal(torrent.content_path);
+  const contentPath = qbittorrent.mapQbitPathToLocal(torrent.content_path);
   let sourceFile = selectPrimaryVideoFile(contentPath);
 
   try {
@@ -100,7 +94,7 @@ async function handleDownloadingEpisode(
       file_path: finalPath,
     });
 
-    await cleanupQbitTorrent(torrent, managedTags, {
+    await qbittorrent.cleanupQbitTorrent(torrent, managedTags, {
       subscription: sub.title,
       episode: ep.title,
     });
@@ -117,9 +111,9 @@ async function cleanupCompletedEpisode(
 ) {
   if (!ep.torrent_hash) return;
   const torrent = findTorrentByHash(qbitTorrents, ep.torrent_hash);
-  if (!torrent || !isDownloadComplete(torrent)) return;
+  if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
-  await cleanupQbitTorrent(torrent, managedTags, {
+  await qbittorrent.cleanupQbitTorrent(torrent, managedTags, {
     subscription: sub.title,
     episode: ep.title,
   });
@@ -154,11 +148,11 @@ async function handleDownloadingMovie(
   if (!activeTorrentRecord?.hash) return;
 
   const torrent = findTorrentByHash(qbitTorrents, activeTorrentRecord.hash);
-  if (!torrent || !isDownloadComplete(torrent)) return;
+  if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
   logger.info({ subscription: sub.title }, "Movie download complete");
 
-  const contentPath = mapQbitPathToLocal(torrent.content_path);
+  const contentPath = qbittorrent.mapQbitPathToLocal(torrent.content_path);
   let sourceFile = selectPrimaryVideoFile(contentPath);
 
   try {
@@ -168,7 +162,7 @@ async function handleDownloadingMovie(
     fileManager.moveFileToMediaDir(sourceFile, destDir, newName);
 
     updateSubscription(sub.id, { status: "completed" });
-    await cleanupQbitTorrent(torrent, managedTags, {
+    await qbittorrent.cleanupQbitTorrent(torrent, managedTags, {
       subscription: sub.title,
     });
   } catch (err) {
@@ -185,9 +179,9 @@ async function cleanupCompletedMovie(
   if (!activeTorrentRecord?.hash) return;
 
   const torrent = findTorrentByHash(qbitTorrents, activeTorrentRecord.hash);
-  if (!torrent || !isDownloadComplete(torrent)) return;
+  if (!torrent || !qbittorrent.isDownloadComplete(torrent)) return;
 
-  await cleanupQbitTorrent(torrent, managedTags, {
+  await qbittorrent.cleanupQbitTorrent(torrent, managedTags, {
     subscription: sub.title,
   });
 }

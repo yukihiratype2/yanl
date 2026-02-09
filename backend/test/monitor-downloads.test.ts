@@ -57,6 +57,11 @@ mock.module("../rss", rssMock);
 const qbitMock = () => ({
   getQbitDownloadDir: () => "/downloads",
   addTorrentByUrl: async () => true,
+  getManagedQbitTags: () => new Set<string>(),
+  getManagedQbitTorrents: async () => [],
+  hasManagedQbitTag: () => false,
+  isDownloadComplete: () => false,
+  cleanupQbitTorrent: async () => {},
 });
 mock.module(modulePath("../src/services/qbittorrent"), qbitMock);
 mock.module("../qbittorrent", qbitMock);
